@@ -1,0 +1,77 @@
+# documentation: https://github.com/paperclipai/paperclip
+# slogan: Open-source control plane for AI-agent companies
+# category: ai
+# tags: ai, agents, orchestration, claude, codex, cursor, llm, control-plane
+# logo: svgs/paperclip.svg
+# port: 3100
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${SERVICE_USER_POSTGRES}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_DB: ${POSTGRES_DB:-paperclip}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SERVICE_USER_POSTGRES} -d ${POSTGRES_DB:-paperclip}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - paperclip-network
+
+  paperclip:
+    image: ghcr.io/paperclipai/paperclip:latest
+    restart: unless-stopped
+    pids_limit: 2048
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3100
+      SERVE_UI: "true"
+      PAPERCLIP_HOME: /paperclip
+      PAPERCLIP_DEPLOYMENT_MODE: ${PAPERCLIP_DEPLOYMENT_MODE:-authenticated}
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: ${PAPERCLIP_DEPLOYMENT_EXPOSURE:-public}
+      PAPERCLIP_PUBLIC_URL: ${SERVICE_URL_PAPERCLIP}
+      PAPERCLIP_ALLOWED_HOSTNAMES: ${PAPERCLIP_ALLOWED_HOSTNAMES:-}
+      BETTER_AUTH_SECRET: ${SERVICE_HEX_64_PAPERCLIP}
+      DATABASE_URL: postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-paperclip}
+
+      # ── LLM Provider Keys (at least one is needed for agents) ──
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      CURSOR_API_KEY: ${CURSOR_API_KEY:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      OPENCODE_ALLOW_ALL_MODELS: ${OPENCODE_ALLOW_ALL_MODELS:-true}
+      GEMINI_SANDBOX: ${GEMINI_SANDBOX:-false}
+
+      # ── Optional Networking / Webhooks ──
+      PAPERCLIP_CHAT_WEBHOOK_PUBLIC_URL: ${PAPERCLIP_CHAT_WEBHOOK_PUBLIC_URL:-}
+      PAPERCLIP_RUNNER_PUBLIC_URL: ${PAPERCLIP_RUNNER_PUBLIC_URL:-}
+    volumes:
+      - paperclip-data:/paperclip
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - paperclip-network
+
+volumes:
+  pgdata:
+  paperclip-data:
+
+networks:
+  paperclip-network:
+    driver: bridge
