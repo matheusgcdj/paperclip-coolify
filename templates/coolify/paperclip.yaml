@@ -40,9 +40,12 @@ services:
       BETTER_AUTH_SECRET: ${SERVICE_HEX_64_PAPERCLIP}
       DATABASE_URL: postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-paperclip}
 
-      # ── LLM Provider Keys (at least one is needed for agents) ──
+      # ── LLM Provider Keys & OpenAI-Compatible Endpoints ──
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MOONSHOT_API_KEY: ${MOONSHOT_API_KEY:-}
       XAI_API_KEY: ${XAI_API_KEY:-}

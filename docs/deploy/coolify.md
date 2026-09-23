@@ -145,7 +145,10 @@ Deploying from your own Git fork allows you to patch Paperclip, add custom agent
 | `PAPERCLIP_DEPLOYMENT_MODE` | `authenticated` (recommended) or `local_trusted` | Defaults to `authenticated`. |
 | `PAPERCLIP_DEPLOYMENT_EXPOSURE` | `public` (for domain + TLS) or `private` (internal LAN/Tailscale) | Defaults to `public`. |
 | `ANTHROPIC_API_KEY` | API Key for Claude Code adapter (`claude_local`) | Required if using Claude models. |
+| `ANTHROPIC_BASE_URL` | Custom endpoint URL for Anthropic proxy | Optional. |
 | `OPENAI_API_KEY` | API Key for OpenAI Codex adapter (`codex_local`) | Required if using OpenAI models. |
+| `OPENAI_BASE_URL` | Base URL for any OpenAI-compatible provider (Ollama, vLLM, DeepSeek, LiteLLM) | Optional. Directs Codex/OpenAI calls to custom endpoints. |
+| `OPENROUTER_API_KEY` | OpenRouter API Key for multi-model access via OpenCode | Optional. Supports models like `openrouter/deepseek/...` |
 | `GEMINI_API_KEY` | API Key for Gemini adapter (`gemini_local`) | Must be scoped to Gemini API. |
 | `OPENCODE_ALLOW_ALL_MODELS` | Enables all models in OpenCode CLI | Set to `true` by default. |
 | `GEMINI_SANDBOX` | Disables nested Docker-in-Docker in Gemini CLI | Set to `false` by default. |
