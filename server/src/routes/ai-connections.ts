@@ -158,18 +158,25 @@ export async function validateAiApiKey(
       headers:
         provider === "anthropic"
           ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
-          : { Authorization: `Bearer ${key}` },
+          : { Authorization: "Bearer " + key },
     });
   } catch {
+    if (process.env.OPENAI_BASE_URL && provider === "openai") {
+      return;
+    }
     throw unprocessable("Could not verify the account. Try again.");
   }
   await response.body?.cancel();
-  if (!response.ok)
+  if (!response.ok) {
+    if (process.env.OPENAI_BASE_URL && provider === "openai" && response.status !== 401 && response.status !== 403) {
+      return;
+    }
     throw unprocessable(
       response.status === 401 || response.status === 403
         ? "The provider rejected this API key."
         : "The provider could not verify this account. Try again.",
     );
+  }
 }
 
 export function aiConnectionRoutes(db: Db, options: Parameters<typeof supportsLocalAiLogin>[0] = {}) {
