@@ -142,6 +142,7 @@ import {
   Check,
   Globe,
   Loader2,
+  RefreshCw,
   ChevronDown,
 } from "lucide-react";
 
@@ -691,6 +692,51 @@ function OnboardingWizardInner({
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [isCompatible, setIsCompatible] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+
+  async function fetchProviderModels(explicitUrl?: string, explicitKey?: string) {
+    const rawUrl = (explicitUrl ?? baseUrl).trim();
+    const rawKey = (explicitKey ?? apiKey).trim();
+    if (!rawUrl) return;
+    setIsFetchingModels(true);
+    try {
+      const cleanUrl = rawUrl.replace(/\/+$/, "");
+      const res = await fetch(`${cleanUrl}/models`, {
+        headers: rawKey ? { Authorization: `Bearer ${rawKey}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      let list: string[] = [];
+      const rawList = Array.isArray(data)
+        ? data
+        : Array.isArray((data as { data?: unknown[] })?.data)
+          ? (data as { data: unknown[] }).data
+          : Array.isArray((data as { models?: unknown[] })?.models)
+            ? (data as { models: unknown[] }).models
+            : [];
+      for (const item of rawList) {
+        if (typeof item === "string" && item.trim()) {
+          list.push(item.trim());
+        } else if (item && typeof item === "object") {
+          const rec = item as Record<string, unknown>;
+          const val = typeof rec.id === "string" ? rec.id : typeof rec.name === "string" ? rec.name : null;
+          if (val && val.trim()) list.push(val.trim());
+        }
+      }
+      if (list.length > 0) {
+        list.sort();
+        setAvailableModels(list);
+        if (!model || !list.includes(model)) {
+          setModel(list[0]);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not auto-fetch models from provider directly:", e);
+    } finally {
+      setIsFetchingModels(false);
+    }
+  }
   // The owner's stored Claude subscription login, read right before the hire
   // (see handleGiveHeartbeat). Onboarding applies it with no extra control,
   // so nothing else reads this state yet.
@@ -2881,20 +2927,56 @@ function OnboardingWizardInner({
                         />}
                         <div className="space-y-3 pt-2 border-t border-border/40">
                           <div>
-                            <label className="text-xs font-semibold text-foreground block mb-1">
-                              {isPt ? "Modelo do Agente (Model ID)" : "Agent Model ID"}
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-foreground">
+                                {isPt ? "Modelo do Agente (Model ID)" : "Agent Model ID"}
+                              </label>
+                              {baseUrl.trim() && (
+                                <button
+                                  type="button"
+                                  onClick={() => fetchProviderModels()}
+                                  disabled={isFetchingModels}
+                                  className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1 cursor-pointer transition-opacity disabled:opacity-50"
+                                >
+                                  {isFetchingModels ? (
+                                    <>
+                                      <Loader2 className="size-3 animate-spin" />
+                                      <span>{isPt ? "Buscando modelos..." : "Fetching models..."}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="size-3" />
+                                      <span>{isPt ? "Buscar modelos do provedor" : "Fetch models from provider"}</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
                             <input
                               type="text"
+                              list="provider-model-options"
                               className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              placeholder="ex: gpt-4o, claude-3-5-sonnet, gemini-2.5-flash"
+                              placeholder={
+                                availableModels.length > 0
+                                  ? isPt ? "Selecione na lista ou digite um modelo..." : "Select or type a model..."
+                                  : "ex: gpt-4o, claude-3-5-sonnet, gemini-2.5-flash"
+                              }
                               value={model}
                               onChange={(e) => setModel(e.target.value)}
                             />
+                            <datalist id="provider-model-options">
+                              {availableModels.map((m: string) => (
+                                <option key={m} value={m} />
+                              ))}
+                            </datalist>
                             <p className="text-[11px] text-muted-foreground mt-1">
-                              {isPt
-                                ? "O modelo que o agente usará para responder às tarefas."
-                                : "The model the agent will use for tasks."}
+                              {availableModels.length > 0
+                                ? isPt
+                                  ? `✓ ${availableModels.length} modelos carregados da API. Você pode escolher no menu ou digitar qualquer outro.`
+                                  : `✓ ${availableModels.length} models loaded from API. Choose from dropdown or type custom.`
+                                : isPt
+                                  ? "Você pode digitar o ID do modelo ou clicar em 'Buscar modelos do provedor' para carregar automaticamente."
+                                  : "Type model ID or click 'Fetch models from provider' to populate automatically."}
                             </p>
                           </div>
                           {!isCompatible && adapterType === "codex_local" && (
