@@ -16,7 +16,7 @@ import { companiesApi } from "../api/companies";
 import { assetsApi } from "../api/assets";
 import { queryKeys } from "../lib/queryKeys";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Trash2 } from "lucide-react";
 import {
   InteractionGovernancePanel,
   applyGovernanceChange,
@@ -188,6 +188,38 @@ export function CompanySettings() {
         queryKey: queryKeys.companies.stats
       });
     }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ companyId }: { companyId: string }) =>
+      companiesApi.remove(companyId),
+    onSuccess: async (_result: unknown, { companyId }: { companyId: string }) => {
+      const deleted = companies.find((company: { id: string; name: string }) => company.id === companyId);
+      const deletedName = deleted?.name ?? "Organization";
+      const remainingCompanies = companies.filter((c: { id: string; status?: string }) => c.id !== companyId && c.status !== "archived");
+
+      toastActions?.pushToast({
+        title: `Organização "${deletedName}" excluída`,
+        body: "A organização e todos os seus recursos foram permanentemente removidos.",
+        tone: "success",
+        dedupeKey: `company-delete:${companyId}`,
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.companies.all,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.companies.stats,
+      });
+
+      if (remainingCompanies.length > 0) {
+        setSelectedCompanyId(remainingCompanies[0].id);
+        navigate(`/${remainingCompanies[0].issuePrefix}/dashboard`, { replace: true });
+      } else {
+        setSelectedCompanyId(null);
+        navigate("/companies", { replace: true });
+      }
+    },
   });
 
   useEffect(() => {
@@ -375,15 +407,19 @@ export function CompanySettings() {
         <div className="text-xs font-medium text-destructive uppercase tracking-wide">
           Danger Zone
         </div>
-        <div className="space-y-3 bg-destructive/5 px-4 py-4">
+
+        {/* Archive organization */}
+        <div className="space-y-3 bg-muted/40 border border-border/60 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-foreground">
+            Archive organization
+          </h4>
           <p className="text-sm text-muted-foreground">
-            Archive this organization to hide it from the sidebar. This persists in
-            the database.
+            Archive this organization to hide it from the sidebar. You can unarchive it later from the organizations list.
           </p>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="destructive"
+              variant="outline"
               disabled={
                 archiveMutation.isPending ||
                 selectedCompany.status === "archived"
@@ -408,6 +444,46 @@ export function CompanySettings() {
                 {archiveMutation.error instanceof Error
                   ? archiveMutation.error.message
                   : "Failed to archive organization"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Real Permanent Delete */}
+        <div className="space-y-3 bg-destructive/10 border border-destructive/25 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-destructive flex items-center gap-2">
+            <Trash2 className="size-4" />
+            Delete organization permanently
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Permanently delete this organization, along with all its agents, tasks, secrets, and runs from the database. This action cannot be undone!
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (!selectedCompanyId) return;
+                const promptName = window.prompt(
+                  `ATENÇÃO: Ação irreversível!\n\nPara confirmar a exclusão PERMANENTE da organização "${selectedCompany.name}", digite o nome exato da organização abaixo:`
+                );
+                if (promptName !== selectedCompany.name) {
+                  if (promptName !== null) {
+                    alert("Nome não corresponde. Exclusão cancelada.");
+                  }
+                  return;
+                }
+                deleteMutation.mutate({ companyId: selectedCompanyId });
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete organization permanently"}
+            </Button>
+            {deleteMutation.isError && (
+              <span className="text-xs text-destructive">
+                {deleteMutation.error instanceof Error
+                  ? deleteMutation.error.message
+                  : "Failed to delete organization"}
               </span>
             )}
           </div>
