@@ -1,4 +1,5 @@
 import { healthApi } from "@/api/health";
+import { useTranslation } from "@/i18n";
 import { LocalProviderLoginInstructions } from "./AdapterLoginChrome";
 import { useLocalAiLogin } from "./ai-connections/useLocalAiLogin";
 import { aiConnectionsApi } from "@/api/ai-connections";
@@ -139,6 +140,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Globe,
   Loader2,
   ChevronDown,
 } from "lucide-react";
@@ -566,6 +568,8 @@ function OnboardingWizardInner({
   // in which the step just changed it still names the departed step.
   const lastStep = useRef(step);
   useEffect(() => { lastStep.current = step; }, [step]);
+  const { t, i18n } = useTranslation();
+  const isPt = (i18n.language || "").toLowerCase().startsWith("pt");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modelOpen, setModelOpen] = useState(false);
@@ -686,6 +690,7 @@ function OnboardingWizardInner({
    */
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
+  const [isCompatible, setIsCompatible] = useState(false);
   // The owner's stored Claude subscription login, read right before the hire
   // (see handleGiveHeartbeat). Onboarding applies it with no extra control,
   // so nothing else reads this state yet.
@@ -1156,7 +1161,7 @@ function OnboardingWizardInner({
    * no longer offers — a selection the customer cannot see.
    */
   const sourceSelected =
-    sourcePicked && recommendedAdapters.some((opt) => opt.type === adapterType);
+    sourcePicked && (isCompatible || recommendedAdapters.some((opt) => opt.type === adapterType));
 
   /**
    * Whether the connect step may advance.
@@ -2572,12 +2577,20 @@ function OnboardingWizardInner({
                       title={
                         <motion.span key={step} {...titleSwapMotion} className="inline-block">
                           {step === 1
-                            ? "What is the name of your organization?"
+                            ? isPt
+                              ? "Qual é o nome da sua organização?"
+                              : "What is the name of your organization?"
                             : step === 3
-                              ? "Create your first agent"
+                              ? isPt
+                                ? "Crie seu primeiro agente"
+                                : "Create your first agent"
                               : step === 4
-                                ? "Connect a model"
-                                : "Let's get started..."}
+                                ? isPt
+                                  ? "Conecte um modelo de IA"
+                                  : "Connect a model"
+                                : isPt
+                                  ? "Vamos começar..."
+                                  : "Let's get started..."}
                         </motion.span>
                       }
                     />
@@ -2599,8 +2612,12 @@ function OnboardingWizardInner({
                       <p className="pt-2 text-base leading-relaxed text-muted-foreground">
                         <motion.span key={step} {...titleSwapMotion} className="inline-block">
                           {step === 4
-                            ? "Paperclip works with your subscription or API keys."
-                            : `${agentName.trim() || "Your first agent"} is ready to work!`}
+                            ? isPt
+                              ? "O Paperclip funciona com sua assinatura ou com chaves de API compatíveis."
+                              : "Paperclip works with your subscription or API keys."
+                            : isPt
+                              ? `${agentName.trim() || "Seu primeiro agente"} está pronto para trabalhar!`
+                              : `${agentName.trim() || "Your first agent"} is ready to work!`}
                         </motion.span>
                       </p>
                     </motion.div>
@@ -2626,11 +2643,11 @@ function OnboardingWizardInner({
               {step === 1 && (
                 <motion.div key="step-1" {...stepContentMotion} exit={stepHandoff ? stepContentMotion.exit : undefined} className="mx-auto flex w-full flex-col gap-9">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="onboarding-company-name">Name</Label>
+                    <Label htmlFor="onboarding-company-name">{isPt ? "Nome da Empresa / Organização" : "Name"}</Label>
                     <Input
                       id="onboarding-company-name"
                       className="h-(--sz-44px) rounded-lg border-transparent bg-muted shadow-none dark:bg-muted"
-                      placeholder="e.g. Northwind Labs"
+                      placeholder={isPt ? "ex: Northwind Labs" : "e.g. Northwind Labs"}
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       onKeyDown={(e) => {
@@ -2654,7 +2671,7 @@ function OnboardingWizardInner({
               {step === 3 && (
                 <motion.div key="step-3" {...stepContentMotion} exit={stepHandoff ? stepContentMotion.exit : undefined} className="mx-auto flex w-full flex-col gap-9">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="onboarding-agent-name">Agent name</Label>
+                    <Label htmlFor="onboarding-agent-name">{isPt ? "Nome do primeiro agente" : "Agent name"}</Label>
                     {/*
                       Filled, not outlined, and the column's full width — the
                       same field the naming step before the hand-off draws.
@@ -2695,17 +2712,25 @@ function OnboardingWizardInner({
                         Picking one starts the sign-in now. The row is the
                         question, and answering it is what opens the card. */}
                     <ModelSourceTiles
-                      label="Model source"
-                      sources={recommendedAdapters.map((opt) => ({
-                        id: opt.type,
-                        label: CONNECT_SOURCE_NAMES[opt.type] ?? opt.label,
-                        icon: <ModelSourceMark type={opt.type} Fallback={opt.icon} />,
-                      }))}
-                      mode={credentialMode}
+                      label={isPt ? "Fonte do Modelo" : "Model source"}
+                      sources={[
+                        ...recommendedAdapters.map((opt) => ({
+                          id: opt.type,
+                          label: CONNECT_SOURCE_NAMES[opt.type] ?? opt.label,
+                          icon: <ModelSourceMark type={opt.type} Fallback={opt.icon} />,
+                        })),
+                        {
+                          id: "openai_compatible",
+                          label: "OpenAI-Compatible",
+                          icon: <Globe className="size-full text-primary" />,
+                        },
+                      ]}
+                      mode={isCompatible ? "api" : credentialMode}
                       selectedId={
-                        sourcePicked &&
-                        recommendedAdapters.some((opt) => opt.type === adapterType)
-                          ? adapterType
+                        sourcePicked
+                          ? isCompatible
+                            ? "openai_compatible"
+                            : adapterType
                           : null
                       }
                       collapsed={connectCollapsed}
@@ -2714,9 +2739,17 @@ function OnboardingWizardInner({
                         if (connectPhase !== "idle") return;
                         autoConnectStartedRef.current = false;
                         setSourcePicked(true);
-                        setAdapterType(id);
-                        if (id === "opencode_local") setModel(DEFAULT_OPENCODE_LOCAL_MODEL);
-                        else if (id !== "codex_local") setModel("");
+                        if (id === "openai_compatible") {
+                          setIsCompatible(true);
+                          setAdapterType("codex_local");
+                          setCredentialMode("api");
+                          if (!model) setModel("gpt-4o");
+                        } else {
+                          setIsCompatible(false);
+                          setAdapterType(id);
+                          if (id === "opencode_local") setModel(DEFAULT_OPENCODE_LOCAL_MODEL);
+                          else if (id !== "codex_local") setModel("");
+                        }
                         setConnectPhase("collapsing");
                       }}
                     />
@@ -2794,17 +2827,46 @@ function OnboardingWizardInner({
                       </p>
                     ) : credentialMode === "api" ? (
                       <OnboardingLoginCard
-                        instruction={savedKeys.options.length ? "Choose a saved API key or enter a new one" : `Provide your ${
-                          CONNECT_SOURCE_NAMES[adapterType] ?? adapterType
-                        } API key to connect`}
+                        instruction={
+                          isCompatible
+                            ? isPt
+                              ? "Configure os dados da sua API compatível com OpenAI (ex: OmniRoute, LiteLLM, Ollama)"
+                              : "Configure your OpenAI-Compatible API details (e.g. OmniRoute, LiteLLM, Ollama)"
+                            : savedKeys.options.length
+                            ? isPt
+                              ? "Escolha uma chave salva ou insira uma nova"
+                              : "Choose a saved API key or enter a new one"
+                            : isPt
+                            ? `Informe a chave de API para conectar`
+                            : `Provide your ${CONNECT_SOURCE_NAMES[adapterType] ?? adapterType} API key to connect`
+                        }
                       >
+                        {isCompatible && (
+                          <div className="mb-3">
+                            <label className="text-xs font-semibold text-foreground block mb-1">
+                              {isPt ? "Base URL da API (Obrigatório)" : "API Base URL (Required)"}
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              placeholder="ex: https://api.omniroute.io/v1"
+                              value={baseUrl}
+                              onChange={(e) => setBaseUrl(e.target.value)}
+                            />
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              {isPt
+                                ? "Insira o endpoint raiz v1 (ex: https://api.omniroute.io/v1 ou http://localhost:11434/v1)"
+                                : "Enter the root v1 endpoint (e.g. https://api.omniroute.io/v1 or http://localhost:11434/v1)"}
+                            </p>
+                          </div>
+                        )}
                         <SavedProviderKeySelect {...savedKeys} disabled={loading || adapterEnvLoading} value={selectedApiKey?.id ?? ""} onChange={(id) => {
                           setSelectedSavedKey(createdCompanyId ? { companyId: createdCompanyId, envKey: apiKeyEnvKeyFor(adapterType), id } : null);
                           setApiKey("");
                         }} />
                         {!selectedApiKey && <OnboardingCardField
-                          label="API key"
-                          placeholder="Enter API key here"
+                          label={isPt ? "Chave de API (API Key)" : "API key"}
+                          placeholder={isPt ? "Insira sua API Key" : "Enter API key here"}
                           masked
                           // The card is the answer to the tile just pressed, so
                           // the field is unambiguously the next thing. Carried
@@ -2817,11 +2879,28 @@ function OnboardingWizardInner({
                           }}
                           onSubmit={() => handleConnectStepPrimary()}
                         />}
-                        {adapterType === "codex_local" && (
-                          <div className="space-y-3 pt-2 border-t border-border/40">
+                        <div className="space-y-3 pt-2 border-t border-border/40">
+                          <div>
+                            <label className="text-xs font-semibold text-foreground block mb-1">
+                              {isPt ? "Modelo do Agente (Model ID)" : "Agent Model ID"}
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              placeholder="ex: gpt-4o, claude-3-5-sonnet, gemini-2.5-flash"
+                              value={model}
+                              onChange={(e) => setModel(e.target.value)}
+                            />
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              {isPt
+                                ? "O modelo que o agente usará para responder às tarefas."
+                                : "The model the agent will use for tasks."}
+                            </p>
+                          </div>
+                          {!isCompatible && adapterType === "codex_local" && (
                             <div>
                               <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                Provider Base URL (opcional para proxies como OmniRoute)
+                                {isPt ? "Base URL Customizada (Opcional)" : "Custom Base URL (Optional)"}
                               </label>
                               <input
                                 type="text"
@@ -2831,20 +2910,8 @@ function OnboardingWizardInner({
                                 onChange={(e) => setBaseUrl(e.target.value)}
                               />
                             </div>
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground block mb-1">
-                                Model / Modelo do Agente
-                              </label>
-                              <input
-                                type="text"
-                                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                placeholder="ex: gpt-4o, claude-3-5-sonnet, gemini-2.0-flash"
-                                value={model}
-                                onChange={(e) => setModel(e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </OnboardingLoginCard>
                     ) : connectStepNeedsLogin &&
                       createdCompanyId &&

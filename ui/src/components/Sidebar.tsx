@@ -23,6 +23,7 @@ import {
   Users,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { SidebarSection } from "./SidebarSection";
 import { SidebarNavItem } from "./SidebarNavItem";
@@ -110,6 +111,8 @@ export function Sidebar({ children }: { children?: ReactNode }) {
   // is a new surface, hidden entirely while the flag is off (same no-flash
   // pattern as showWorkspacesLink above).
   const conferenceRoomChatEnabled = experimentalSettings?.enableConferenceRoomChat === true;
+  const { i18n } = useTranslation();
+  const isPt = (i18n.language || "").toLowerCase().startsWith("pt");
 
   const pluginContext = {
     companyId: selectedCompanyId,
@@ -148,13 +151,13 @@ export function Sidebar({ children }: { children?: ReactNode }) {
                 )}
               >
                 <SquarePen className="h-4 w-4 shrink-0" />
-                <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "truncate"}>New Task</span>
+                <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "truncate"}>{isPt ? "Nova Tarefa" : "New Task"}</span>
               </button>
             );
             return rail ? (
               <Tooltip>
                 <TooltipTrigger asChild>{newTaskButton}</TooltipTrigger>
-                <TooltipContent side="right">New Task</TooltipContent>
+                <TooltipContent side="right">{isPt ? "Nova Tarefa" : "New Task"}</TooltipContent>
               </Tooltip>
             ) : (
               newTaskButton
@@ -164,11 +167,11 @@ export function Sidebar({ children }: { children?: ReactNode }) {
               width; a nav row also keeps search reachable from the
               collapsed rail, where the old header icon was dropped entirely.
               Cmd/Ctrl+K remains the keyboard path (command palette). */}
-          <SidebarNavItem to="/search" label="Search" icon={Search} />
-          <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
+          <SidebarNavItem to="/search" label={isPt ? "Buscar" : "Search"} icon={Search} />
+          <SidebarNavItem to="/dashboard" label={isPt ? "Painel" : "Dashboard"} icon={LayoutDashboard} liveCount={liveRunCount} />
           <SidebarNavItem
             to="/inbox"
-            label="Inbox"
+            label={isPt ? "Entrada" : "Inbox"}
             icon={Inbox}
             badge={inboxBadge.inbox}
             badgeLabel="unread"
@@ -178,7 +181,7 @@ export function Sidebar({ children }: { children?: ReactNode }) {
           {showDecisions ? (
             <SidebarNavItem
               to="/decisions"
-              label="Decisions"
+              label={isPt ? "Decisões" : "Decisions"}
               icon={ListChecks}
               badge={attentionCount}
               badgeLabel="decisions"
@@ -188,20 +191,20 @@ export function Sidebar({ children }: { children?: ReactNode }) {
             <SidebarNavItem to="/status" label="Status" icon={LayoutGrid} textBadge="beta" />
           ) : null}
           {conferenceRoomChatEnabled ? (
-            <SidebarNavItem to="/board-chat" label="Conference Room" icon={MessagesSquare} />
+            <SidebarNavItem to="/board-chat" label={isPt ? "Sala de Reuniões" : "Conference Room"} icon={MessagesSquare} />
           ) : null}
         </div>
 
-        <SidebarSection label="Work" collapsible={{ open: workOpen, onOpenChange: setWorkOpen }}>
-          <SidebarNavItem to="/issues" label="Tasks" icon={CircleCheck} />
+        <SidebarSection label={isPt ? "Trabalho" : "Work"} collapsible={{ open: workOpen, onOpenChange: setWorkOpen }}>
+          <SidebarNavItem to="/issues" label={isPt ? "Tarefas" : "Tasks"} icon={CircleCheck} />
           {streamlinedUiEnabled ? (
             <>
-              <SidebarNavItem to="/projects" label="Projects" icon={FolderOpen} />
+              <SidebarNavItem to="/projects" label={isPt ? "Projetos" : "Projects"} icon={FolderOpen} />
               <SidebarStarredProjects />
             </>
           ) : null}
-          <SidebarNavItem to="/routines" label="Routines" icon={Repeat} />
-          <SidebarNavItem to="/artifacts" label="Artifacts" icon={Package} />
+          <SidebarNavItem to="/routines" label={isPt ? "Rotinas" : "Routines"} icon={Repeat} />
+          <SidebarNavItem to="/artifacts" label={isPt ? "Artefatos" : "Artifacts"} icon={Package} />
           {showCases ? (
             <SidebarNavItem to="/cases" label="Cases" icon={Layers} textBadge="beta" />
           ) : null}
@@ -209,7 +212,7 @@ export function Sidebar({ children }: { children?: ReactNode }) {
             <SidebarNavItem to="/pipelines" label="Pipelines" icon={GitBranch} />
           ) : null}
           {showGoalsLink ? (
-            <SidebarNavItem to="/goals" label="Goals" icon={Target} />
+            <SidebarNavItem to="/goals" label={isPt ? "Objetivos" : "Goals"} icon={Target} />
           ) : goalsLinkPending ? (
             <div
               data-testid="sidebar-goals-placeholder"
@@ -237,13 +240,13 @@ export function Sidebar({ children }: { children?: ReactNode }) {
 
         {streamlinedUiEnabled ? (
           <SidebarSection
-            label="Org"
+            label={isPt ? "Organização" : "Org"}
             collapsible={{ open: organizationOpen, onOpenChange: setOrganizationOpen }}
           >
-            <SidebarNavItem to="/agents" label="Agents" icon={Users} />
-            <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />
-            <SidebarNavItem to="/apps" label="Connectors" icon={Unplug} />
-            <SidebarNavItem to="/activity" label="Audit" icon={History} />
+            <SidebarNavItem to="/agents" label={isPt ? "Agentes" : "Agents"} icon={Users} />
+            <SidebarNavItem to="/skills" label={isPt ? "Habilidades" : "Skills"} icon={Boxes} />
+            <SidebarNavItem to="/apps" label={isPt ? "Conectores" : "Connectors"} icon={Unplug} />
+            <SidebarNavItem to="/activity" label={isPt ? "Auditoria" : "Audit"} icon={History} />
           </SidebarSection>
         ) : null}
 
@@ -257,15 +260,15 @@ export function Sidebar({ children }: { children?: ReactNode }) {
             <SidebarProjects />
             <SidebarAgents />
             <SidebarSection
-              label="Organization"
+              label={isPt ? "Organização" : "Organization"}
               collapsible={{ open: organizationOpen, onOpenChange: setOrganizationOpen }}
             >
-              <SidebarNavItem to="/org" label="Org" icon={Network} />
-              <SidebarNavItem to="/apps" label="Connectors" icon={Unplug} />
-              <SidebarNavItem to="/timeline" label="Timeline" icon={GanttChartSquare} />
-              <SidebarNavItem to="/costs" label="Costs" icon={DollarSign} />
-              <SidebarNavItem to="/activity" label="Activity" icon={History} />
-              <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />
+              <SidebarNavItem to="/org" label={isPt ? "Organização" : "Org"} icon={Network} />
+              <SidebarNavItem to="/apps" label={isPt ? "Conectores" : "Connectors"} icon={Unplug} />
+              <SidebarNavItem to="/timeline" label={isPt ? "Cronograma" : "Timeline"} icon={GanttChartSquare} />
+              <SidebarNavItem to="/costs" label={isPt ? "Custos" : "Costs"} icon={DollarSign} />
+              <SidebarNavItem to="/activity" label={isPt ? "Atividades" : "Activity"} icon={History} />
+              <SidebarNavItem to="/company/settings" label={isPt ? "Configurações" : "Settings"} icon={Settings} />
             </SidebarSection>
           </>
         )}
