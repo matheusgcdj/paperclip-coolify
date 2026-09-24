@@ -20,7 +20,7 @@ services:
       - paperclip-network
 
   paperclip:
-    image: ghcr.io/paperclipai/paperclip:latest
+    image: ${PAPERCLIP_IMAGE:-ghcr.io/matheusgcdj/paperclip-coolify:latest}
     restart: unless-stopped
     pids_limit: 2048
     expose:
