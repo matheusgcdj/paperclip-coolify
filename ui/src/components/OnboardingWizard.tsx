@@ -2479,7 +2479,7 @@ function OnboardingWizardInner({
               front-door choice ahead of it, and it fills the width on every
               step (the mission step's half-width split is gone). */}
           <div className="w-full flex flex-col overflow-y-auto">
-            <div className="absolute top-4 right-4 z-10">
+            <div className="w-full flex justify-end px-4 pt-3 sm:px-8 sm:pt-4 shrink-0 z-20">
               <LanguageToggle />
             </div>
             <div
