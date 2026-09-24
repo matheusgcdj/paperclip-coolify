@@ -45,4 +45,57 @@ if [ -d "$home_dir" ] && [ -n "$(find "$home_dir" \( ! -user node -o ! -group no
     chown -R node:node "$home_dir"
 fi
 
+# Ensure default instance directory and config exist for non-interactive / container deployments
+instance_dir="${home_dir}/instances/${PAPERCLIP_INSTANCE_ID:-default}"
+config_file="${instance_dir}/config.json"
+if [ ! -f "$config_file" ]; then
+    mkdir -p "$instance_dir"
+    cat << 'EOF' > "$config_file"
+{
+  "$meta": {
+    "version": 1,
+    "updatedAt": "2026-09-24T00:00:00.000Z",
+    "source": "configure"
+  },
+  "database": {
+    "mode": "postgres"
+  },
+  "logging": {
+    "mode": "file",
+    "logDir": "/paperclip/instances/default/logs"
+  },
+  "server": {
+    "deploymentMode": "authenticated",
+    "exposure": "private",
+    "bind": "lan",
+    "host": "0.0.0.0",
+    "port": 3100,
+    "allowedHostnames": [],
+    "serveUi": true
+  },
+  "auth": {
+    "baseUrlMode": "auto",
+    "disableSignUp": false
+  },
+  "telemetry": {
+    "enabled": true
+  },
+  "storage": {
+    "provider": "local_disk",
+    "localDisk": {
+      "baseDir": "/paperclip/instances/default/data/storage"
+    }
+  },
+  "secrets": {
+    "provider": "local_encrypted",
+    "strictMode": false,
+    "localEncrypted": {
+      "keyFilePath": "/paperclip/instances/default/secrets/master.key"
+    }
+  }
+}
+EOF
+    chown -R node:node "$instance_dir"
+fi
+
 exec gosu node "$@"

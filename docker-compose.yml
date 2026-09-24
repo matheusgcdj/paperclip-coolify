@@ -23,6 +23,8 @@ services:
     image: ghcr.io/paperclipai/paperclip:latest
     restart: unless-stopped
     pids_limit: 2048
+    command: >-
+      sh -c "node -e 'const fs=require(\"fs\"),p=\"/paperclip/instances/default/config.json\";if(!fs.existsSync(p)){fs.mkdirSync(\"/paperclip/instances/default\",{recursive:true});fs.writeFileSync(p,JSON.stringify({\"$$meta\":{version:1,updatedAt:new Date().toISOString(),source:\"configure\"},database:{mode:\"postgres\"},logging:{mode:\"file\",logDir:\"/paperclip/instances/default/logs\"},server:{deploymentMode:\"authenticated\",exposure:\"private\",bind:\"lan\",host:\"0.0.0.0\",port:3100,allowedHostnames:[],serveUi:true},auth:{baseUrlMode:\"auto\",disableSignUp:false},telemetry:{enabled:true},storage:{provider:\"local_disk\",localDisk:{baseDir:\"/paperclip/instances/default/data/storage\"}},secrets:{provider:\"local_encrypted\",strictMode:false,localEncrypted:{keyFilePath:\"/paperclip/instances/default/secrets/master.key\"}}}));console.log(\"Initialized default Paperclip instance config\");}' && exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js"
     expose:
       - "3100"
     ports:

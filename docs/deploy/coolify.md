@@ -135,6 +135,36 @@ Deploying from your own Git fork allows you to patch Paperclip, add custom agent
 
 ---
 
+## First Admin / CEO Account Setup (Bootstrap)
+
+In production (`PAPERCLIP_DEPLOYMENT_MODE=authenticated` with `PAPERCLIP_DEPLOYMENT_EXPOSURE=public`), browser-based public self-registration is disabled by default for security to prevent unauthorized users from claiming admin privileges.
+
+When you first open your Paperclip URL, you will see:
+> *"This Paperclip is waiting on its first admin"*
+
+### Generate the First Admin Invite Link
+
+1. Open your Coolify dashboard and navigate to your **Paperclip** application.
+2. Go to the **Terminal** tab and select the **`paperclip`** container.
+3. Run the bootstrap command:
+   ```bash
+   npx --yes paperclipai auth bootstrap-ceo
+   ```
+4. Paperclip will connect to PostgreSQL, create a secure one-time invite token, and output:
+   ```text
+   Created bootstrap CEO invite.
+   Invite URL: https://paperclip.yourdomain.com/invite/pcp_bootstrap_xxxxxxxxxxxxxxxxxxxx
+   Expires: in 72 hours
+   ```
+5. Copy the invite URL, paste it into your browser, and complete the setup of your administrator account (Name, Email, Password).
+
+*(Optional) You can also run this command directly from your server SSH terminal:*
+```bash
+docker exec -it $(docker ps -q -f name=paperclip) npx --yes paperclipai auth bootstrap-ceo
+```
+
+---
+
 ## Environment Variables Reference
 
 | Variable | Description | Coolify Behavior |
