@@ -44,6 +44,9 @@ export function setLocale(locale: string) {
     localStorage.setItem("paperclip_locale", locale);
   } catch {}
   void i18n.changeLanguage(locale);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("languagechange"));
+  }
 }
 
 export function getCurrentLocale(): string {
