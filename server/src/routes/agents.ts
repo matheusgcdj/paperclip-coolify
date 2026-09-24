@@ -3315,10 +3315,15 @@ export function agentRoutes(
     // takes a real hello turn.
     if (resolvedMethod === "api_key") {
       const envKey = AI_CONNECTION_CAPABILITIES[binding.provider].methods.api_key?.envKey;
-      const key = envKey ? parseObject(context.config.env)[envKey] : undefined;
+      const contextConfig = (context as { config?: { env?: unknown } }).config;
+      const key = envKey ? parseObject(contextConfig?.env)[envKey] : undefined;
+      const rawEnv = (contextConfig?.env ?? {}) as Record<string, unknown>;
+      const customBaseUrl =
+        (typeof rawEnv.OPENAI_BASE_URL === "string" ? rawEnv.OPENAI_BASE_URL : (rawEnv.OPENAI_BASE_URL as { value?: unknown } | undefined)?.value as string | undefined) ||
+        (typeof rawEnv.ANTHROPIC_BASE_URL === "string" ? rawEnv.ANTHROPIC_BASE_URL : (rawEnv.ANTHROPIC_BASE_URL as { value?: unknown } | undefined)?.value as string | undefined);
       try {
         if (typeof key !== "string" || !key) throw unprocessable("The selected account's API key was not available to verify.");
-        await validateAiApiKey(binding.provider, key);
+        await validateAiApiKey(binding.provider, key, undefined, customBaseUrl);
         result.checks.push({ code: "ai_connection_api_key_reverified", level: "info", message: "The provider verified this API key for adoption." });
       } catch (error) {
         result.status = "fail";

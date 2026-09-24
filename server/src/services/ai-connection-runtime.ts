@@ -219,11 +219,21 @@ export async function prepareManagedAiRuntime(
     "CLAUDE_CODE_USE_FOUNDRY",
     "PAPERCLIP_OPENCODE_PROVIDERS",
   ]) {
-    if (configuredEnv[key])
-      throw unprocessable(
-        "The configured provider routing is incompatible with this AI connection",
-        { code: "ai_connection_incompatible" },
-      );
+    if (configuredEnv[key]) {
+      const isCompatibleRouting =
+        (key === "OPENAI_BASE_URL" && input.binding.provider === "openai") ||
+        (key === "ANTHROPIC_BASE_URL" && input.binding.provider === "anthropic") ||
+        (key === "XAI_BASE_URL" && input.binding.provider === "xai") ||
+        (key.startsWith("CLAUDE_CODE_USE_") && input.binding.provider === "anthropic") ||
+        (key === "PAPERCLIP_OPENCODE_PROVIDERS" && input.binding.provider === "openrouter");
+
+      if (!isCompatibleRouting) {
+        throw unprocessable(
+          "The configured provider routing is incompatible with this AI connection",
+          { code: "ai_connection_incompatible" },
+        );
+      }
+    }
   }
   await assertManagedAiProjectAuth(input.config, input.binding.provider);
   const service = aiConnectionService(db);
@@ -260,22 +270,62 @@ export async function prepareManagedAiRuntime(
     );
     const providerHome = path.join(home, "provider");
     await mkdir(providerHome, { mode: 0o700 });
+    const rawEnv = (input.config.env && typeof input.config.env === "object"
+      ? (input.config.env as Record<string, unknown>)
+      : {});
+    const configuredOpenAiBaseUrl =
+      typeof rawEnv.OPENAI_BASE_URL === "string"
+        ? rawEnv.OPENAI_BASE_URL
+        : typeof (rawEnv.OPENAI_BASE_URL as { value?: unknown } | undefined)?.value === "string"
+          ? (rawEnv.OPENAI_BASE_URL as { value: string }).value
+          : (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0 ? process.env.OPENAI_BASE_URL.trim() : undefined);
+    const configuredAnthropicBaseUrl =
+      typeof rawEnv.ANTHROPIC_BASE_URL === "string"
+        ? rawEnv.ANTHROPIC_BASE_URL
+        : typeof (rawEnv.ANTHROPIC_BASE_URL as { value?: unknown } | undefined)?.value === "string"
+          ? (rawEnv.ANTHROPIC_BASE_URL as { value: string }).value
+          : (process.env.ANTHROPIC_BASE_URL && process.env.ANTHROPIC_BASE_URL.trim().length > 0 ? process.env.ANTHROPIC_BASE_URL.trim() : undefined);
+
     const env: Record<string, unknown> = {
       ...stripAiAuthBindings(input.config.env),
       ...Object.fromEntries(AI_AUTH_ENV_KEYS.map((key) => [key, ""])),
       ...managedAiHomeEnvironment(home),
     };
+    if (configuredOpenAiBaseUrl) {
+      env.OPENAI_BASE_URL = configuredOpenAiBaseUrl;
+    }
+    if (configuredAnthropicBaseUrl) {
+      env.ANTHROPIC_BASE_URL = configuredAnthropicBaseUrl;
+    }
+
     const capability =
       AI_CONNECTION_CAPABILITIES[input.binding.provider].methods[
         selection.attribution.method
       ]!;
     const authFile = path.join(providerHome, "auth.json");
-    if (input.binding.provider === "openai")
+    if (input.binding.provider === "openai") {
+      let configTomlContent = 'cli_auth_credentials_store = "file"\n';
+      if (configuredOpenAiBaseUrl) {
+        const cleanUrl = configuredOpenAiBaseUrl.trim();
+        configTomlContent += `model_provider = "custom_openai"\n\n[model_providers.custom_openai]\nname = "Custom OpenAI-Compatible"\nbase_url = "${cleanUrl}"\nenv_key = "OPENAI_API_KEY"\nwire_api = "responses"\n`;
+        env.PAPERCLIP_CODEX_PROVIDERS = JSON.stringify({
+          providers: {
+            custom_openai: {
+              name: "Custom OpenAI-Compatible",
+              base_url: cleanUrl,
+              env_key: "OPENAI_API_KEY",
+              wire_api: "responses",
+            },
+          },
+          model_provider: "custom_openai",
+        });
+      }
       await writeFile(
         path.join(providerHome, "config.toml"),
-        'cli_auth_credentials_store = "file"\n',
+        configTomlContent,
         { mode: 0o600 },
       );
+    }
     if (subscriptionFile) await writeFile(authFile, value, { mode: 0o600 });
     else env[capability.envKey] = value;
     if (
