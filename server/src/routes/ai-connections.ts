@@ -138,9 +138,15 @@ export async function validateAiApiKey(
   key: string,
   request: typeof fetch = fetch,
 ) {
+  const openaiEndpoint = process.env.OPENAI_BASE_URL
+    ? `${process.env.OPENAI_BASE_URL.replace(/\/+$/, "")}/models`
+    : "https://api.openai.com/v1/models";
+  const anthropicEndpoint = process.env.ANTHROPIC_BASE_URL
+    ? `${process.env.ANTHROPIC_BASE_URL.replace(/\/+$/, "")}/models?limit=1`
+    : "https://api.anthropic.com/v1/models?limit=1";
   const endpoints = {
-    anthropic: "https://api.anthropic.com/v1/models?limit=1",
-    openai: "https://api.openai.com/v1/models",
+    anthropic: anthropicEndpoint,
+    openai: openaiEndpoint,
     openrouter: "https://openrouter.ai/api/v1/key",
     xai: "https://api.x.ai/v1/models",
   };

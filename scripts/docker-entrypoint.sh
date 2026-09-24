@@ -98,4 +98,27 @@ EOF
     chown -R node:node "$instance_dir"
 fi
 
+# Patch compiled routes to respect OPENAI_BASE_URL and ANTHROPIC_BASE_URL if set
+node -e '
+const fs = require("fs");
+for (const file of ["/app/server/dist/routes/ai-connections.js", "/app/server/dist/adapters/codex-models.js"]) {
+  if (fs.existsSync(file)) {
+    let c = fs.readFileSync(file, "utf8");
+    let changed = false;
+    if (c.includes("https://api.openai.com/v1/models")) {
+      c = c.replace(/["\x27]https:\/\/api\.openai\.com\/v1\/models["\x27]/g, "(process.env.OPENAI_BASE_URL ? process.env.OPENAI_BASE_URL.replace(/\\/+$/, \"\") + \"/models\" : \"https://api.openai.com/v1/models\")");
+      changed = true;
+    }
+    if (c.includes("https://api.anthropic.com/v1/models?limit=1")) {
+      c = c.replace(/["\x27]https:\/\/api\.anthropic\.com\/v1\/models\?limit=1["\x27]/g, "(process.env.ANTHROPIC_BASE_URL ? process.env.ANTHROPIC_BASE_URL.replace(/\\/+$/, \"\") + \"/models?limit=1\" : \"https://api.anthropic.com/v1/models?limit=1\")");
+      changed = true;
+    }
+    if (changed) {
+      fs.writeFileSync(file, c);
+      console.log("[docker-entrypoint] Patched " + file + " to respect custom BASE_URL");
+    }
+  }
+}
+' 2>/dev/null || true
+
 exec gosu node "$@"
