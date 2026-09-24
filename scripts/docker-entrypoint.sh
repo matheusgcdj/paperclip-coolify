@@ -74,7 +74,8 @@ if [ ! -f "$config_file" ]; then
     "serveUi": true
   },
   "auth": {
-    "baseUrlMode": "auto",
+    "baseUrlMode": "explicit",
+    "publicBaseUrl": "${PAPERCLIP_PUBLIC_URL:-http://localhost:3100}",
     "disableSignUp": false
   },
   "telemetry": {
