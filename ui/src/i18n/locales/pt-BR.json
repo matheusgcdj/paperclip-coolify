@@ -5,5 +5,49 @@
       "description": "Comece criando uma empresa.",
       "newCompany": "Nova empresa"
     }
+  },
+  "onboarding": {
+    "welcomeTitle": "Bem-vindo ao Paperclip",
+    "welcomeSubtitle": "Vamos configurar seu espaço de trabalho e contratar seu primeiro agente de IA.",
+    "orgTitle": "Nome da sua organização",
+    "orgPlaceholder": "Minha Empresa",
+    "agentTitle": "Conheça seu primeiro agente",
+    "agentPlaceholder": "Alex",
+    "connectTitle": "Conectar um modelo",
+    "connectInstruction": "Insira suas credenciais para conectar",
+    "modelSource": "Fonte do modelo",
+    "openaiCompatible": "Compatível com OpenAI",
+    "providerBaseUrl": "URL Base do Provedor",
+    "providerBaseUrlPlaceholder": "https://api.omniroute.io/v1",
+    "apiKey": "Chave de API",
+    "apiKeyPlaceholder": "Insira sua chave de API aqui",
+    "model": "Nome do Modelo",
+    "modelPlaceholder": "ex: gpt-4o, deepseek-chat, claude-3-5-sonnet",
+    "launchTitle": "Tudo pronto!",
+    "launchSubtitle": "Sua organização e seu primeiro agente estão prontos para operar.",
+    "launchButton": "Ir para o Painel",
+    "continue": "Continuar",
+    "back": "Voltar"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "issues": "Tarefas",
+    "agents": "Agentes",
+    "skills": "Habilidades",
+    "routines": "Rotinas",
+    "activity": "Atividades",
+    "costs": "Custos",
+    "settings": "Configurações",
+    "companySettings": "Configurações da Empresa"
+  },
+  "common": {
+    "save": "Salvar alterações",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "search": "Buscar...",
+    "language": "Idioma",
+    "portuguese": "Português (Brasil)",
+    "english": "English"
   }
 }

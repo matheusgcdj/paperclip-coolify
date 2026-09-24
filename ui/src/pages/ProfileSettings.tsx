@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 function deriveInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -269,6 +270,18 @@ export function ProfileSettings() {
             </Button>
           </div>
         </form>
+
+        <Card className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="text-base font-medium text-foreground">Language / Idioma</h3>
+              <p className="text-sm text-muted-foreground">
+                Choose the display language for the application. Detected automatically by default.
+              </p>
+            </div>
+            <LanguageToggle />
+          </div>
+        </Card>
 
         <InboxAgentPolicyControl companyId={selectedCompanyId} />
       </section>

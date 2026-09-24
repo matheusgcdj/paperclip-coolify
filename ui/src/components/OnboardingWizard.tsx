@@ -128,6 +128,7 @@ import {
 } from "./onboarding/Stepper";
 import { AgentPreview } from "./onboarding/AgentPreview";
 import { ModelSourceTiles, type CredentialMode } from "./onboarding/ModelSourceTiles";
+import { LanguageToggle } from "./LanguageToggle";
 import { CredentialModeLink } from "./onboarding/CredentialModeLink";
 import { FooterNav, type FooterPrimaryIcon } from "./onboarding/FooterNav";
 import { OnboardingHeading } from "./onboarding/OnboardingPrimitives";
@@ -684,6 +685,7 @@ function OnboardingWizardInner({
    * `localStorage`, and a provider key does not belong there.
    */
   const [apiKey, setApiKey] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
   // The owner's stored Claude subscription login, read right before the hire
   // (see handleGiveHeartbeat). Onboarding applies it with no extra control,
   // so nothing else reads this state yet.
@@ -1798,7 +1800,16 @@ function OnboardingWizardInner({
     if (apiKeySecretRef.current?.key === key && apiKeySecretRef.current.companyId === companyId && apiKeySecretRef.current.envKey === envKey) return true;
     try {
       if (managedProvider) {
-        await aiConnectionsApi.create(companyId, { provider: managedProvider, method: "api_key", name: `My ${CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider} API`, ownership: "personal", apiKey: key, agentIds: [], allAgents: true });
+        await aiConnectionsApi.create(companyId, {
+          provider: managedProvider,
+          method: "api_key",
+          name: `My ${CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider} API`,
+          ownership: "personal",
+          apiKey: (key as string),
+          baseUrl: baseUrl.trim() || undefined,
+          agentIds: [],
+          allAgents: true
+        });
         apiKeySecretRef.current = { key, companyId, envKey, aiConnection: { provider: managedProvider, method: "api_key", mode: "responsible_user" } };
         return true;
       }
@@ -1873,6 +1884,16 @@ function OnboardingWizardInner({
           ? { ...(config.env as Record<string, unknown>) }
           : {};
       env[apiKeyEnvKeyFor(adapterType)] = selectedApiKey?.binding ?? apiKeySecretRef.current?.binding;
+      if (baseUrl.trim() && adapterType === "codex_local") {
+        env.OPENAI_BASE_URL = { type: "plain", value: baseUrl.trim() };
+      }
+      config.env = env;
+    } else if (baseUrl.trim() && adapterType === "codex_local") {
+      const env =
+        typeof config.env === "object" && config.env !== null && !Array.isArray(config.env)
+          ? { ...(config.env as Record<string, unknown>) }
+          : {};
+      env.OPENAI_BASE_URL = { type: "plain", value: baseUrl.trim() };
       config.env = env;
     }
     if (credentialMode === "subscription" && savedSubscription?.binding) {
@@ -2407,6 +2428,9 @@ function OnboardingWizardInner({
               front-door choice ahead of it, and it fills the width on every
               step (the mission step's half-width split is gone). */}
           <div className="w-full flex flex-col overflow-y-auto">
+            <div className="absolute top-4 right-4 z-10">
+              <LanguageToggle />
+            </div>
             <div
               className={cn(
                 // my-auto, not items-center on the column: they look identical
@@ -2793,6 +2817,34 @@ function OnboardingWizardInner({
                           }}
                           onSubmit={() => handleConnectStepPrimary()}
                         />}
+                        {adapterType === "codex_local" && (
+                          <div className="space-y-3 pt-2 border-t border-border/40">
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground block mb-1">
+                                Provider Base URL (opcional para proxies como OmniRoute)
+                              </label>
+                              <input
+                                type="text"
+                                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                placeholder="ex: https://api.omniroute.io/v1"
+                                value={baseUrl}
+                                onChange={(e) => setBaseUrl(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground block mb-1">
+                                Model / Modelo do Agente
+                              </label>
+                              <input
+                                type="text"
+                                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                placeholder="ex: gpt-4o, claude-3-5-sonnet, gemini-2.0-flash"
+                                value={model}
+                                onChange={(e) => setModel(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </OnboardingLoginCard>
                     ) : connectStepNeedsLogin &&
                       createdCompanyId &&

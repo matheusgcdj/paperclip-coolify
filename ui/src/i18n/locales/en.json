@@ -5,5 +5,49 @@
       "description": "Get started by creating an organization.",
       "newCompany": "New Organization"
     }
+  },
+  "onboarding": {
+    "welcomeTitle": "Welcome to Paperclip",
+    "welcomeSubtitle": "Let's set up your workspace and hire your first AI agent.",
+    "orgTitle": "Name your organization",
+    "orgPlaceholder": "Acme Corp",
+    "agentTitle": "Meet your first hire",
+    "agentPlaceholder": "Alex",
+    "connectTitle": "Connect a model",
+    "connectInstruction": "Provide your credentials to connect",
+    "modelSource": "Model source",
+    "openaiCompatible": "OpenAI-Compatible",
+    "providerBaseUrl": "Provider Base URL",
+    "providerBaseUrlPlaceholder": "https://api.omniroute.io/v1",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Enter API key here",
+    "model": "Model Name",
+    "modelPlaceholder": "e.g. gpt-4o, deepseek-chat, claude-3-5-sonnet",
+    "launchTitle": "All set!",
+    "launchSubtitle": "Your organization and first agent are ready.",
+    "launchButton": "Launch to Dashboard",
+    "continue": "Continue",
+    "back": "Back"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "issues": "Issues",
+    "agents": "Agents",
+    "skills": "Skills",
+    "routines": "Routines",
+    "activity": "Activity",
+    "costs": "Costs",
+    "settings": "Settings",
+    "companySettings": "Organization Settings"
+  },
+  "common": {
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search...",
+    "language": "Language",
+    "portuguese": "Português (Brasil)",
+    "english": "English"
   }
 }

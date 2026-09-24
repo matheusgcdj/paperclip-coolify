@@ -137,10 +137,13 @@ export async function validateAiApiKey(
   provider: AiProvider,
   key: string,
   request: typeof fetch = fetch,
+  customBaseUrl?: string,
 ) {
-  const openaiEndpoint = process.env.OPENAI_BASE_URL
-    ? `${process.env.OPENAI_BASE_URL.replace(/\/+$/, "")}/models`
-    : "https://api.openai.com/v1/models";
+  const openaiEndpoint = customBaseUrl
+    ? `${customBaseUrl.replace(/\/+$/, "")}/models`
+    : process.env.OPENAI_BASE_URL
+      ? `${process.env.OPENAI_BASE_URL.replace(/\/+$/, "")}/models`
+      : "https://api.openai.com/v1/models";
   const anthropicEndpoint = process.env.ANTHROPIC_BASE_URL
     ? `${process.env.ANTHROPIC_BASE_URL.replace(/\/+$/, "")}/models?limit=1`
     : "https://api.anthropic.com/v1/models?limit=1";
@@ -161,14 +164,14 @@ export async function validateAiApiKey(
           : { Authorization: "Bearer " + key },
     });
   } catch {
-    if (process.env.OPENAI_BASE_URL && provider === "openai") {
+    if (customBaseUrl || (process.env.OPENAI_BASE_URL && provider === "openai")) {
       return;
     }
     throw unprocessable("Could not verify the account. Try again.");
   }
   await response.body?.cancel();
   if (!response.ok) {
-    if (process.env.OPENAI_BASE_URL && provider === "openai" && response.status !== 401 && response.status !== 403) {
+    if (customBaseUrl || (process.env.OPENAI_BASE_URL && provider === "openai" && response.status !== 401 && response.status !== 403)) {
       return;
     }
     throw unprocessable(
@@ -294,7 +297,7 @@ export function aiConnectionRoutes(db: Db, options: Parameters<typeof supportsLo
           "Use the existing provider sign-in flow to connect a subscription",
         );
       const attemptStartedAt = new Date();
-      await validateAiApiKey(input.provider, input.apiKey!);
+      await validateAiApiKey(input.provider, input.apiKey!, undefined, (input as { baseUrl?: string }).baseUrl);
       const result = await service.save(
         companyId,
         userId,

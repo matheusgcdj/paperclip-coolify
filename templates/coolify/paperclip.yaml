@@ -27,22 +27,6 @@ services:
     image: ghcr.io/paperclipai/paperclip:latest
     restart: unless-stopped
     pids_limit: 2048
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        node -e '
-        const fs = require("fs");
-        for (const file of ["/app/server/dist/routes/ai-connections.js", "/app/server/dist/adapters/codex-models.js"]) {
-          if (fs.existsSync(file)) {
-            let c = fs.readFileSync(file, "utf8");
-            c = c.replace(/async function validateAiApiKey\s*\([^)]*\)\s*\{/s, "async function validateAiApiKey() { return;");
-            c = c.replace(/["\x27]https:\/\/api\.openai\.com\/v1\/models["\x27]/g, "(process.env.OPENAI_BASE_URL ? process.env.OPENAI_BASE_URL.replace(/\\/+$$/, \"\") + \"/models\" : \"https://api.openai.com/v1/models\")");
-            fs.writeFileSync(file, c);
-          }
-        }
-        ' 2>/dev/null || true
-        exec /usr/bin/tini -- docker-entrypoint.sh node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
