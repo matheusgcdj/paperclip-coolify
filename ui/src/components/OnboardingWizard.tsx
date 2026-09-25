@@ -101,6 +101,7 @@ import { restoreOnboardingState } from "../lib/onboarding-state";
 import {
   buildOnboardingIssuePayload,
   buildOnboardingProjectPayload,
+  ONBOARDING_PROJECT_NAME,
   selectDefaultCompanyGoalId,
   selectReusableOnboardingProject,
 } from "../lib/onboarding-launch";
@@ -1770,7 +1771,10 @@ function OnboardingWizardInner({
         } else {
           const project = await projectsApi.create(
             createdCompanyId,
-            buildOnboardingProjectPayload(goalId)
+            {
+              ...buildOnboardingProjectPayload(goalId),
+              name: t(ONBOARDING_PROJECT_NAME),
+            }
           );
           projectId = project.id;
           queryClient.invalidateQueries({
@@ -1785,7 +1789,7 @@ function OnboardingWizardInner({
         const issue = await issuesApi.create(
           createdCompanyId,
           buildOnboardingIssuePayload({
-            title: DEFAULT_TASK_TITLE,
+            title: t(DEFAULT_TASK_TITLE),
             assigneeAgentId: createdAgentId,
             projectId,
             goalId

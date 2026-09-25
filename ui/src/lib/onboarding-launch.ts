@@ -35,11 +35,20 @@ export function buildOnboardingProjectPayload(goalId: string | null) {
 export function selectReusableOnboardingProject<T extends Pick<Project, "name" | "status">>(
   projects: T[],
 ): T | null {
+  const recognizedNames = new Set([
+    ONBOARDING_PROJECT_NAME.toLowerCase(),
+    "integração",
+    "integracao",
+    "integración",
+    "intégration",
+    "einarbeitung",
+    "onboarding"
+  ]);
   return (
     projects.find(
       (project) =>
         project.status !== "cancelled" &&
-        project.name.trim().toLowerCase() === ONBOARDING_PROJECT_NAME.toLowerCase(),
+        recognizedNames.has(project.name.trim().toLowerCase()),
     ) ?? null
   );
 }

@@ -135,7 +135,8 @@ export async function renderChiefOfStaffPersona(
   placeholders: OnboardingFirstTaskPlaceholders,
 ): Promise<string> {
   const template = await loadFirstTaskAsset("chief-of-staff/AGENTS.md");
-  return fillFirstTaskPlaceholders(template, placeholders);
+  const base = fillFirstTaskPlaceholders(template, placeholders);
+  return `${base}\n\n# Idioma e Comunicação\n\n- Comunique-se, formule perguntas, proponha tarefas e elabore planos/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.\n- Nunca responda em inglês quando o usuário ou a organização estiver em português.\n`;
 }
 
 // The instruction bundle for the onboarding first agent: the chief-of-staff

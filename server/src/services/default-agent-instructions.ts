@@ -15,7 +15,10 @@ export async function loadDefaultAgentInstructionsBundle(role: DefaultAgentBundl
   const fileNames = DEFAULT_AGENT_BUNDLE_FILES[role];
   const entries = await Promise.all(
     fileNames.map(async (fileName) => {
-      const content = await fs.readFile(resolveDefaultAgentBundleUrl(role, fileName), "utf8");
+      let content = await fs.readFile(resolveDefaultAgentBundleUrl(role, fileName), "utf8");
+      if (fileName === "AGENTS.md") {
+        content = `${content}\n\n- Idioma e Comunicação: Comunique-se, formule perguntas, escreva comentários de tarefas e crie planos/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma. Nunca responda em inglês quando o usuário ou a organização se comunicar em português.\n`;
+      }
       return [fileName, content] as const;
     }),
   );

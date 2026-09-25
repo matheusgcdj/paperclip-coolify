@@ -177,6 +177,26 @@ function translateSinglePiece(raw: string, locale: string): string | null {
     if (trans) return `(${trans})`;
   }
 
+  // 4b. Quotes (e.g. '"Review progress."', '“Known issue”')
+  if (
+    (normalized.startsWith('"') && normalized.endsWith('"')) ||
+    (normalized.startsWith("'") && normalized.endsWith("'")) ||
+    (normalized.startsWith("“") && normalized.endsWith("”"))
+  ) {
+    const qStart = normalized[0];
+    const qEnd = normalized[normalized.length - 1];
+    const base = normalized.slice(1, -1).trim();
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `${qStart}${trans}${qEnd}`;
+  }
+
+  // 4c. Brackets (e.g. "[default]")
+  if (normalized.startsWith("[") && normalized.endsWith("]")) {
+    const base = normalized.slice(1, -1).trim();
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `[${trans}]`;
+  }
+
   // 5. Keyboard shortcut suffix (e.g. "New Task (⌘K)", "Search (Ctrl+K)")
   const shortcutMatch = normalized.match(/^(.*?)\s*(\([⌘⌃⌥⇧A-Za-z0-9+-]+\))$/);
   if (shortcutMatch) {
@@ -220,7 +240,7 @@ export function translateText(text: string, locale: string): string | null {
     return `${leading}${direct}${trailing}`;
   }
 
-  // Composed pieces with separators: " · ", ", ", " - "
+  // Composed pieces with separators: " · ", ", ", " - ", " – ", " | "
   if (trimmed.includes(" · ")) {
     const parts = trimmed.split(" · ");
     const translatedParts = parts.map((p) => translateSinglePiece(p, locale) ?? p);
@@ -238,6 +258,67 @@ export function translateText(text: string, locale: string): string | null {
       const leading = text.match(/^\s*/)?.[0] ?? "";
       const trailing = text.match(/\s*$/)?.[0] ?? "";
       return `${leading}${translatedParts.join(", ")}${trailing}`;
+    }
+  }
+
+  if (trimmed.includes(" - ")) {
+    const parts = trimmed.split(" - ");
+    const translatedParts = parts.map((p) => translateSinglePiece(p, locale) ?? p);
+    if (translatedParts.some((p, i) => p !== parts[i])) {
+      const leading = text.match(/^\s*/)?.[0] ?? "";
+      const trailing = text.match(/\s*$/)?.[0] ?? "";
+      return `${leading}${translatedParts.join(" - ")}${trailing}`;
+    }
+  }
+
+  if (trimmed.includes(" — ")) {
+    const parts = trimmed.split(" — ");
+    const translatedParts = parts.map((p) => translateSinglePiece(p, locale) ?? p);
+    if (translatedParts.some((p, i) => p !== parts[i])) {
+      const leading = text.match(/^\s*/)?.[0] ?? "";
+      const trailing = text.match(/\s*$/)?.[0] ?? "";
+      return `${leading}${translatedParts.join(" — ")}${trailing}`;
+    }
+  }
+
+  // Multi-line blocks (e.g. multi-line descriptions or markdown paragraphs)
+  if (trimmed.includes("\n")) {
+    const lines = trimmed.split("\n");
+    let anyLineTranslated = false;
+    const translatedLines = lines.map((l) => {
+      const trans = translateText(l, locale);
+      if (trans) {
+        anyLineTranslated = true;
+        return trans;
+      }
+      return l;
+    });
+    if (anyLineTranslated) {
+      const leading = text.match(/^\s*/)?.[0] ?? "";
+      const trailing = text.match(/\s*$/)?.[0] ?? "";
+      return `${leading}${translatedLines.join("\n")}${trailing}`;
+    }
+  }
+
+  // Multi-sentence paragraph support: split by sentence boundaries
+  if (trimmed.includes(". ") || trimmed.includes("! ") || trimmed.includes("? ")) {
+    const sentences = trimmed.split(/(?<=[.!?])\s+/);
+    if (sentences.length > 1) {
+      let anySentenceTranslated = false;
+      const translatedSentences = sentences.map((s) => {
+        const trans = translateSinglePiece(s, locale) ?? translateSinglePiece(s.replace(/[.!?]$/, ""), locale);
+        if (trans) {
+          anySentenceTranslated = true;
+          const punctuation = s.match(/[.!?]$/)?.[0] ?? "";
+          return punctuation && !trans.endsWith(punctuation) ? `${trans}${punctuation}` : trans;
+        }
+        return s;
+      });
+      if (anySentenceTranslated) {
+        const leading = text.match(/^\s*/)?.[0] ?? "";
+        const trailing = text.match(/\s*$/)?.[0] ?? "";
+        return `${leading}${translatedSentences.join(" ")}${trailing}`;
+      }
     }
   }
 
