@@ -12,6 +12,7 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToastActions } from "../context/ToastContext";
 import { useInboxDismissals } from "../hooks/useInboxBadge";
 import { queryKeys } from "../lib/queryKeys";
+import { useTranslation } from "@/i18n";
 import {
   ATTENTION_AGING_DAYS,
   attentionIsAging,
@@ -62,6 +63,7 @@ export function DecisionQueuePage() {
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const { pushToast } = useToastActions();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const params = useParams<{ key: string }>();
   const queueKey = params.key ?? "";
@@ -126,8 +128,8 @@ export function DecisionQueuePage() {
   }, [agents]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Decisions", href: "/decisions" }, { label: queue?.title ?? queueKey }]);
-  }, [setBreadcrumbs, queue?.title, queueKey]);
+    setBreadcrumbs([{ label: t("Decisions"), href: "/decisions" }, { label: queue?.title ?? queueKey }]);
+  }, [setBreadcrumbs, queue?.title, queueKey, t]);
 
   // Re-hydrate per-company preferences when the company changes.
   useEffect(() => {

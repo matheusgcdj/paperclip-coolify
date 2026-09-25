@@ -15,6 +15,7 @@ import { Download, Maximize2, Minus, Network, Plus, Upload } from "lucide-react"
 import { AGENT_ROLE_LABELS, type Agent } from "@paperclipai/shared";
 import { useCloudInstance } from "@/hooks/useCloudInstance";
 import { useHiddenSettings } from "@/hooks/useHiddenSettings";
+import { useTranslation } from "@/i18n";
 
 // Layout constants
 const CARD_W = 200;
@@ -208,6 +209,7 @@ export interface OrgChartProps {
 export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, embedded = false }: OrgChartProps = {}) {
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   // Import is floored server-side on cloud-managed instances (403 cloud_managed), so the
   // button is hidden rather than dead-ending. Export stays available. Both
@@ -238,8 +240,8 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
   }, [agents]);
 
   useEffect(() => {
-    if (!embedded) setBreadcrumbs([{ label: "Org Chart" }]);
-  }, [embedded, setBreadcrumbs]);
+    if (!embedded) setBreadcrumbs([{ label: t("Org Chart") }]);
+  }, [embedded, setBreadcrumbs, t]);
 
   // Layout computation
   const layout = useMemo(() => layoutForest(orgTree ?? []), [orgTree]);

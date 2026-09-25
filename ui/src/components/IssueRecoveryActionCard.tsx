@@ -1,5 +1,6 @@
 import { requiresExecutionReconciliation } from "@paperclipai/shared";
 import { useMemo, useState } from "react";
+import { useTranslation } from "@/i18n";
 import type {
   Agent,
   GitWorktreeBranchAncestryVerdict,
@@ -993,6 +994,7 @@ export function IssueRecoveryActionCard({
   variant = "full",
   className,
 }: IssueRecoveryActionCardProps) {
+  const { t } = useTranslation();
   const liveness = useMemo(() => ({ scheduledRetry }), [scheduledRetry]);
   const cardState: RecoveryCardCardState = forcedState ?? deriveRecoveryCardState(action, liveness);
   const tone = STATE_TONE[cardState];
@@ -1002,25 +1004,25 @@ export function IssueRecoveryActionCard({
 
   const headline = useMemo(() => {
     if (cardState === "resolved" && action.outcome) {
-      return `Recovery resolved as ${OUTCOME_LABEL[action.outcome] ?? action.outcome}.`;
+      return t(`Recovery resolved as ${OUTCOME_LABEL[action.outcome] ?? action.outcome}.`);
     }
     if (
       (cardState === "needed" || cardState === "escalated") &&
       action.kind === "active_run_watchdog" &&
       action.ownerType === "board"
     ) {
-      return "This recovery needs a human decision. Review the recorded failure and choose the next step.";
+      return t("This recovery needs a human decision. Review the recorded failure and choose the next step.");
     }
     if (lineage) return lineageHeadline(lineage);
-    return KIND_HEADLINE[action.kind] ?? KIND_HEADLINE.missing_disposition;
+    return t(KIND_HEADLINE[action.kind] ?? KIND_HEADLINE.missing_disposition);
   }, [action.kind, action.outcome, action.ownerType, cardState, lineage]);
 
   // A lane with no path left must not keep advertising a retry that will never run — whether
   // the budget ran out or the scheduled attempt simply never fired.
   const wakeSummary = lineage?.retryExpired
-    ? "The scheduled retry did not run — a retry or a decision is needed"
+    ? t("The scheduled retry did not run — a retry or a decision is needed")
     : lineage?.exhausted && lineage.lane !== "board"
-    ? "Automatic retries are finished — a decision is needed"
+    ? t("Automatic retries are finished — a decision is needed")
     : readWakePolicySummary(action);
   const evidenceSummary = pickEvidenceSummary(action);
   const sourceRunId = readEvidenceRunId(action, "sourceRunId") ?? readEvidenceRunId(action, "latestRunId");
@@ -1138,7 +1140,7 @@ export function IssueRecoveryActionCard({
             <span className={tone.labelClass}>{tone.label}</span>
             <span className="text-muted-foreground/60" aria-hidden>·</span>
             <code className="rounded bg-background/70 px-1.5 py-0.5 font-mono text-(length:--text-micro) tracking-normal text-muted-foreground">
-              {KIND_LABEL[action.kind] ?? action.kind}
+              {t(KIND_LABEL[action.kind] ?? action.kind)}
             </code>
             {updatedAtLabel ? (
               <>

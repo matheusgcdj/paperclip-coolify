@@ -8,6 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { useTranslation } from "@/i18n";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -239,6 +240,7 @@ interface FileContentViewerProps {
 type MarkdownPreviewMode = "raw" | "rendered";
 
 export function FileContentViewer({ content, highlightedLine, onLoaded }: FileContentViewerProps) {
+  const { t } = useTranslation();
   const { resource } = content;
   const isMarkdown = resource.previewKind === "text" && content.content.encoding === "utf8" && isMarkdownResource(resource);
   const [markdownMode, setMarkdownMode] = useState<MarkdownPreviewMode>("rendered");
@@ -389,8 +391,8 @@ export function FileContentViewer({ content, highlightedLine, onLoaded }: FileCo
             type="button"
             variant={markdownMode === "rendered" ? "secondary" : "ghost"}
             size="icon-sm"
-            aria-label="Show rendered Markdown"
-            title="Rendered Markdown"
+            aria-label={t("Show rendered Markdown")}
+            title={t("Rendered Markdown")}
             aria-pressed={markdownMode === "rendered"}
             onClick={() => setMarkdownMode("rendered")}
             className={cn(
@@ -404,8 +406,8 @@ export function FileContentViewer({ content, highlightedLine, onLoaded }: FileCo
             type="button"
             variant={markdownMode === "raw" ? "secondary" : "ghost"}
             size="icon-sm"
-            aria-label="Show raw Markdown"
-            title="Raw Markdown"
+            aria-label={t("Show raw Markdown")}
+            title={t("Raw Markdown")}
             aria-pressed={markdownMode === "raw"}
             onClick={() => setMarkdownMode("raw")}
             className={cn(
@@ -500,6 +502,8 @@ export function FileViewerSheet({
   const [fileTreeWidth, setFileTreeWidth] = useState(288);
   const copyFeedbackTimerRef = useRef<number | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  const { t } = useTranslation();
 
   const resolveQuery = useQuery({
     queryKey: state

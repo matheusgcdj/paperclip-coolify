@@ -112,6 +112,7 @@ export function Sidebar({ children }: { children?: ReactNode }) {
   // pattern as showWorkspacesLink above).
   const conferenceRoomChatEnabled = experimentalSettings?.enableConferenceRoomChat === true;
   const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const isPt = (i18n.language || "").toLowerCase().startsWith("pt");
 
   const pluginContext = {
@@ -145,19 +146,19 @@ export function Sidebar({ children }: { children?: ReactNode }) {
               <button
                 onClick={() => openNewIssue()}
                 data-slot="icon-button"
-                aria-label={rail ? "New Task" : undefined}
+                aria-label={rail ? t("New Task") : undefined}
                 className={cn(
                   "flex items-center gap-2.5 mx-2 rounded-lg px-2 py-1.5 pointer-coarse:py-1 text-(length:--text-compact) font-medium text-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <SquarePen className="h-4 w-4 shrink-0" />
-                <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "truncate"}>{isPt ? "Nova Tarefa" : "New Task"}</span>
+                <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "truncate"}>{t("New Task")}</span>
               </button>
             );
             return rail ? (
               <Tooltip>
                 <TooltipTrigger asChild>{newTaskButton}</TooltipTrigger>
-                <TooltipContent side="right">{isPt ? "Nova Tarefa" : "New Task"}</TooltipContent>
+                <TooltipContent side="right">{t("New Task")}</TooltipContent>
               </Tooltip>
             ) : (
               newTaskButton
@@ -167,11 +168,11 @@ export function Sidebar({ children }: { children?: ReactNode }) {
               width; a nav row also keeps search reachable from the
               collapsed rail, where the old header icon was dropped entirely.
               Cmd/Ctrl+K remains the keyboard path (command palette). */}
-          <SidebarNavItem to="/search" label={isPt ? "Buscar" : "Search"} icon={Search} />
-          <SidebarNavItem to="/dashboard" label={isPt ? "Painel" : "Dashboard"} icon={LayoutDashboard} liveCount={liveRunCount} />
+          <SidebarNavItem to="/search" label={t("Search")} icon={Search} />
+          <SidebarNavItem to="/dashboard" label={t("Dashboard")} icon={LayoutDashboard} liveCount={liveRunCount} />
           <SidebarNavItem
             to="/inbox"
-            label={isPt ? "Entrada" : "Inbox"}
+            label={t("Inbox")}
             icon={Inbox}
             badge={inboxBadge.inbox}
             badgeLabel="unread"
@@ -181,38 +182,38 @@ export function Sidebar({ children }: { children?: ReactNode }) {
           {showDecisions ? (
             <SidebarNavItem
               to="/decisions"
-              label={isPt ? "Decisões" : "Decisions"}
+              label={t("Decisions")}
               icon={ListChecks}
               badge={attentionCount}
               badgeLabel="decisions"
             />
           ) : null}
           {showStatusCards ? (
-            <SidebarNavItem to="/status" label="Status" icon={LayoutGrid} textBadge="beta" />
+            <SidebarNavItem to="/status" label={t("Status")} icon={LayoutGrid} textBadge="beta" />
           ) : null}
           {conferenceRoomChatEnabled ? (
-            <SidebarNavItem to="/board-chat" label={isPt ? "Sala de Reuniões" : "Conference Room"} icon={MessagesSquare} />
+            <SidebarNavItem to="/board-chat" label={t("Conference Room")} icon={MessagesSquare} />
           ) : null}
         </div>
 
-        <SidebarSection label={isPt ? "Trabalho" : "Work"} collapsible={{ open: workOpen, onOpenChange: setWorkOpen }}>
-          <SidebarNavItem to="/issues" label={isPt ? "Tarefas" : "Tasks"} icon={CircleCheck} />
+        <SidebarSection label={t("Work")} collapsible={{ open: workOpen, onOpenChange: setWorkOpen }}>
+          <SidebarNavItem to="/issues" label={t("Tasks")} icon={CircleCheck} />
           {streamlinedUiEnabled ? (
             <>
-              <SidebarNavItem to="/projects" label={isPt ? "Projetos" : "Projects"} icon={FolderOpen} />
+              <SidebarNavItem to="/projects" label={t("Projects")} icon={FolderOpen} />
               <SidebarStarredProjects />
             </>
           ) : null}
-          <SidebarNavItem to="/routines" label={isPt ? "Rotinas" : "Routines"} icon={Repeat} />
-          <SidebarNavItem to="/artifacts" label={isPt ? "Artefatos" : "Artifacts"} icon={Package} />
+          <SidebarNavItem to="/routines" label={t("Routines")} icon={Repeat} />
+          <SidebarNavItem to="/artifacts" label={t("Artifacts")} icon={Package} />
           {showCases ? (
-            <SidebarNavItem to="/cases" label="Cases" icon={Layers} textBadge="beta" />
+            <SidebarNavItem to="/cases" label={t("Cases")} icon={Layers} textBadge="beta" />
           ) : null}
           {showPipelines ? (
-            <SidebarNavItem to="/pipelines" label="Pipelines" icon={GitBranch} />
+            <SidebarNavItem to="/pipelines" label={t("Pipelines")} icon={GitBranch} />
           ) : null}
           {showGoalsLink ? (
-            <SidebarNavItem to="/goals" label={isPt ? "Objetivos" : "Goals"} icon={Target} />
+            <SidebarNavItem to="/goals" label={t("Goals")} icon={Target} />
           ) : goalsLinkPending ? (
             <div
               data-testid="sidebar-goals-placeholder"
@@ -221,7 +222,7 @@ export function Sidebar({ children }: { children?: ReactNode }) {
             />
           ) : null}
           {showWorkspacesLink ? (
-            <SidebarNavItem to="/workspaces" label="Workspaces" icon={GitBranch} />
+            <SidebarNavItem to="/workspaces" label={t("Workspaces")} icon={GitBranch} />
           ) : null}
           <PluginSlotOutlet
             slotTypes={["sidebar"]}
@@ -240,13 +241,13 @@ export function Sidebar({ children }: { children?: ReactNode }) {
 
         {streamlinedUiEnabled ? (
           <SidebarSection
-            label={isPt ? "Organização" : "Org"}
+            label={t("Organization")}
             collapsible={{ open: organizationOpen, onOpenChange: setOrganizationOpen }}
           >
-            <SidebarNavItem to="/agents" label={isPt ? "Agentes" : "Agents"} icon={Users} />
-            <SidebarNavItem to="/skills" label={isPt ? "Habilidades" : "Skills"} icon={Boxes} />
-            <SidebarNavItem to="/apps" label={isPt ? "Conectores" : "Connectors"} icon={Unplug} />
-            <SidebarNavItem to="/activity" label={isPt ? "Auditoria" : "Audit"} icon={History} />
+            <SidebarNavItem to="/agents" label={t("Agents")} icon={Users} />
+            <SidebarNavItem to="/skills" label={t("Skills")} icon={Boxes} />
+            <SidebarNavItem to="/apps" label={t("Connectors")} icon={Unplug} />
+            <SidebarNavItem to="/activity" label={t("Audit")} icon={History} />
           </SidebarSection>
         ) : null}
 
@@ -260,15 +261,15 @@ export function Sidebar({ children }: { children?: ReactNode }) {
             <SidebarProjects />
             <SidebarAgents />
             <SidebarSection
-              label={isPt ? "Organização" : "Organization"}
+              label={t("Organization")}
               collapsible={{ open: organizationOpen, onOpenChange: setOrganizationOpen }}
             >
-              <SidebarNavItem to="/org" label={isPt ? "Organização" : "Org"} icon={Network} />
-              <SidebarNavItem to="/apps" label={isPt ? "Conectores" : "Connectors"} icon={Unplug} />
-              <SidebarNavItem to="/timeline" label={isPt ? "Cronograma" : "Timeline"} icon={GanttChartSquare} />
-              <SidebarNavItem to="/costs" label={isPt ? "Custos" : "Costs"} icon={DollarSign} />
-              <SidebarNavItem to="/activity" label={isPt ? "Atividades" : "Activity"} icon={History} />
-              <SidebarNavItem to="/company/settings" label={isPt ? "Configurações" : "Settings"} icon={Settings} />
+              <SidebarNavItem to="/org" label={t("Org")} icon={Network} />
+              <SidebarNavItem to="/apps" label={t("Connectors")} icon={Unplug} />
+              <SidebarNavItem to="/timeline" label={t("Timeline")} icon={GanttChartSquare} />
+              <SidebarNavItem to="/costs" label={t("Costs")} icon={DollarSign} />
+              <SidebarNavItem to="/activity" label={t("Activity")} icon={History} />
+              <SidebarNavItem to="/company/settings" label={t("Settings")} icon={Settings} />
             </SidebarSection>
           </>
         )}

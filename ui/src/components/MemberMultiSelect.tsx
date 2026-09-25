@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 export interface MemberMultiSelectOption {
   userId: string;
@@ -18,6 +19,15 @@ export interface MemberMultiSelectOption {
 export function memberOptionLabel(member: MemberMultiSelectOption): string {
   return member.name?.trim() || member.email?.trim() || member.userId;
 }
+
+const DEFAULT_EMPTY_MESSAGE = "No members yet.";
+const DEFAULT_FILTER_PLACEHOLDER = "Filter people";
+const NO_MATCHES_MESSAGE = "No matches.";
+const NO_PEOPLE_SELECTED = "No people selected";
+const CANCEL_LABEL = "Cancel";
+const SAVING_LABEL = "Saving…";
+const SAVE_LABEL = "Save";
+const DONE_LABEL = "Done";
 
 /**
  * People counterpart to `AgentMultiSelect` (PAP-17835).
@@ -68,11 +78,14 @@ export function MemberMultiSelect({
   filterPlaceholder?: string;
   onOpenChange?: (open: boolean) => void;
 }): ReactNode {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
   const [draftUserIds, setDraftUserIds] = useState<Set<string>>(new Set(selectedUserIds));
   const staged = Boolean(onSave);
   const workingUserIds = staged ? draftUserIds : selectedUserIds;
+  const resolvedEmptyMessage = emptyMessage ?? t(DEFAULT_EMPTY_MESSAGE);
+  const resolvedFilterPlaceholder = filterPlaceholder ?? t(DEFAULT_FILTER_PLACEHOLDER);
 
   useEffect(() => {
     if (open && staged) setDraftUserIds(new Set(selectedUserIds));
@@ -146,7 +159,7 @@ export function MemberMultiSelect({
               <Skeleton className="h-6 w-full" />
             </div>
           ) : members.length === 0 ? (
-            <div className="px-3 py-4 text-sm text-muted-foreground">{emptyMessage}</div>
+            <div className="px-3 py-4 text-sm text-muted-foreground">{resolvedEmptyMessage}</div>
           ) : (
             <div className="max-h-60 overflow-y-auto py-1">
               {filteredMembers.map((member) => {
@@ -160,7 +173,7 @@ export function MemberMultiSelect({
                   >
                     <Checkbox
                       checked={workingUserIds.has(member.userId)}
-                      aria-label={`Allow ${label}`}
+                      aria-label={t("Allow {label}", { label })}
                       onCheckedChange={(checked) => {
                         const next = new Set(workingUserIds);
                         if (checked) next.add(member.userId);
@@ -178,18 +191,18 @@ export function MemberMultiSelect({
                 );
               })}
               {filteredMembers.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-muted-foreground">No matches.</div>
+                <div className="px-3 py-4 text-sm text-muted-foreground">{t(NO_MATCHES_MESSAGE)}</div>
               ) : null}
             </div>
           )}
           <div className="flex items-center justify-between border-t border-border px-3 py-2">
             <span className="text-xs text-muted-foreground" aria-live="polite">
-              {workingUserIds.size === 0 ? "No people selected" : `${workingUserIds.size} selected`}
+              {workingUserIds.size === 0 ? t(NO_PEOPLE_SELECTED) : `${workingUserIds.size} ${t("selected")}`}
             </span>
             <div className="flex items-center gap-2">
               {staged ? (
                 <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={pending}>
-                  Cancel
+                  {t(CANCEL_LABEL)}
                 </Button>
               ) : null}
               <Button
@@ -201,7 +214,7 @@ export function MemberMultiSelect({
                 }}
                 disabled={pending}
               >
-                {staged ? (pending ? "Saving…" : "Save") : "Done"}
+                {staged ? (pending ? t(SAVING_LABEL) : t(SAVE_LABEL)) : t(DONE_LABEL)}
               </Button>
             </div>
           </div>

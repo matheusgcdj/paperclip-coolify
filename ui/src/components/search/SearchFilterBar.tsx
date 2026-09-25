@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "@/i18n";
 import { User, UserX } from "lucide-react";
 import {
   COMPANY_SEARCH_UPDATED_WITHIN_OPTIONS,
@@ -148,6 +149,7 @@ export function SearchFilterBar({
   onSortChange: (next: CompanySearchSort) => void;
   data: SearchFilterDataProps;
 }) {
+  const { t } = useTranslation();
   const options = useMemo(() => buildSearchFilterOptions(data), [data]);
 
   function toggleMulti(dimension: "status" | "priority", value: string) {
@@ -169,34 +171,34 @@ export function SearchFilterBar({
         selected={filters.status ?? []}
         onToggle={(value) => toggleMulti("status", value)}
         onClear={() => onChange({ ...filters, status: [] })}
-        presets={[{ label: "Open items", values: OPEN_STATUS_PRESET }]}
+        presets={[{ label: t("Open items"), values: OPEN_STATUS_PRESET }]}
       />
       <SearchFilterMenu
-        label="Assignee"
-        options={options.assignee}
-        selected={selectedAssignee ? [selectedAssignee] : []}
-        onSelect={(value) => onChange(applyAssigneeToken(filters, value, data.currentUserId))}
-        searchable
-        searchPlaceholder="Search assignees…"
-        emptyMessage="No assignees"
-      />
+              label={t("Assignee")}
+              options={options.assignee}
+              selected={filters.assigneeAgentId || filters.assigneeUserId ? [filters.assigneeAgentId ?? filters.assigneeUserId!] : []}
+              onSelect={(value) => onChange(applyAssigneeToken(filters, value, data.currentUserId))}
+              searchable
+              searchPlaceholder={t("Search assignees…")}
+              emptyMessage={t("No assignees")}
+            />
       <SearchFilterMenu
-        label="Project"
+        label={t("Project")}
         options={options.project}
         selected={filters.projectId ? [filters.projectId] : []}
         onSelect={(value) => onChange({ ...filters, projectId: value })}
         searchable
-        searchPlaceholder="Search projects…"
-        emptyMessage="No projects"
+        searchPlaceholder={t("Search projects…")}
+        emptyMessage={t("No projects")}
       />
       <SearchFilterMenu
-        label="Label"
+        label={t("Label")}
         options={options.label}
         selected={filters.labelId ? [filters.labelId] : []}
         onSelect={(value) => onChange({ ...filters, labelId: value })}
         searchable
-        searchPlaceholder="Search labels…"
-        emptyMessage="No labels"
+        searchPlaceholder={t("Search labels…")}
+        emptyMessage={t("No labels")}
       />
       {/* PAP-411: Priority filter menu hidden behind SHOW_TASK_PRIORITY_UI (search DSL stays intact). */}
       {SHOW_TASK_PRIORITY_UI && (

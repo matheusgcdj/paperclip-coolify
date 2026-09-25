@@ -1,5 +1,6 @@
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { useMemo, useState } from "react";
+import { useTranslation } from "@/i18n";
 import {
   ArrowRight,
   Braces,
@@ -120,6 +121,7 @@ export function OverviewSection({
     isSectionDirty,
     navigateToSection,
   } = ctx;
+  const { t } = useTranslation();
   const [descriptionAnnotationsOpen, setDescriptionAnnotationsOpen] = useState(defaultDescriptionAnnotationsOpen);
 
   const activeTriggers = routine.triggers.length;
@@ -308,29 +310,29 @@ export function OverviewSection({
       <div className="grid gap-3 sm:grid-cols-2">
         <SummaryCard
           icon={Clock3}
-          label="Triggers"
-          value={activeTriggers === 0 ? "None" : `${activeTriggers} active`}
-          hint={nextFire ? `Next fire ${nextFire}` : "No schedule"}
+          label={t("Triggers")}
+          value={activeTriggers === 0 ? t("None") : `${activeTriggers} ${t("active")}`}
+          hint={nextFire ? `${t("Next fire")} ${nextFire}` : t("No schedule")}
           to={() => navigateToSection("triggers")}
-          ariaLabel={`${activeTriggers} triggers. Open triggers.`}
+          ariaLabel={`${activeTriggers} ${t("triggers")}. ${t("Open triggers")}.`}
         />
         <SummaryCard
           icon={Play}
-          label="Last run"
-          value={lastRun ? lastRun.status.replaceAll("_", " ") : "No runs"}
-          hint={lastRun ? timeAgo(lastRun.triggeredAt) : "Trigger a run"}
+          label={t("Last run")}
+          value={lastRun ? lastRun.status.replaceAll("_", " ") : t("No runs")}
+          hint={lastRun ? timeAgo(lastRun.triggeredAt) : t("Trigger a run")}
           to={() => navigateToSection("runs")}
-          ariaLabel={lastRun ? `Last run ${lastRun.status}. Open runs.` : "No runs. Open runs."}
+          ariaLabel={lastRun ? `${t("Last run")} ${lastRun.status}. ${t("Open runs")}.` : `${t("No runs")}. ${t("Open runs")}.`}
         />
       </div>
 
       {/* Recent activity */}
       <div className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Recent activity
+          {t("Recent activity")}
         </p>
         {recentActivity.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No activity yet.</p>
+          <p className="text-xs text-muted-foreground">{t("No activity yet.")}</p>
         ) : (
           <div className="divide-y divide-border/60">
             {recentActivity.map((event) => (

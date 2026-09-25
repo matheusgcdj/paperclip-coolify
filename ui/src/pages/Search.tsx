@@ -27,6 +27,7 @@ import { projectsApi } from "../api/projects";
 import { queryKeys } from "../lib/queryKeys";
 import { loadRecentSearches, pushRecentSearch } from "../lib/recent-searches";
 import { PageTabBar, type PageTabItem } from "../components/PageTabBar";
+import { useTranslation } from "@/i18n";
 import {
   applySearchFiltersToParams,
   applySearchOperatorSuggestion,
@@ -133,6 +134,7 @@ function shapeError(error: unknown): { message: string; status?: number } {
 export function Search() {
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { t } = useTranslation();
   const { openNewIssue } = useDialogActions();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -156,8 +158,8 @@ export function Search() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Search" }]);
-  }, [setBreadcrumbs]);
+    setBreadcrumbs([{ label: t("Search") }]);
+  }, [setBreadcrumbs, t]);
 
   useEffect(() => {
     if (!selectedCompanyId) return;

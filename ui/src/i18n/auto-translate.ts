@@ -1,19 +1,37 @@
-import { UI_TRANSLATIONS, DICT_ES, DICT_FR } from "./translations-dict";
+import ptDict from "./generated-dicts/pt-BR.json";
+import esDict from "./generated-dicts/es.json";
+import frDict from "./generated-dicts/fr.json";
+import deDict from "./generated-dicts/de.json";
+import itDict from "./generated-dicts/it.json";
+import jaDict from "./generated-dicts/ja.json";
+import zhDict from "./generated-dicts/zh-CN.json";
 
-const LOWERCASE_MAP_PT = new Map<string, string>();
-for (const [key, value] of Object.entries(UI_TRANSLATIONS)) {
-  LOWERCASE_MAP_PT.set(key.toLowerCase(), value);
+type DictMap = Record<string, string>;
+
+interface LocaleCache {
+  dict: DictMap;
+  lowerMap: Map<string, string>;
 }
 
-const LOWERCASE_MAP_ES = new Map<string, string>();
-for (const [key, value] of Object.entries(DICT_ES)) {
-  LOWERCASE_MAP_ES.set(key.toLowerCase(), value);
+function buildCache(dict: DictMap): LocaleCache {
+  const lowerMap = new Map<string, string>();
+  for (const [key, value] of Object.entries(dict)) {
+    lowerMap.set(key.toLowerCase(), value);
+  }
+  return { dict, lowerMap };
 }
 
-const LOWERCASE_MAP_FR = new Map<string, string>();
-for (const [key, value] of Object.entries(DICT_FR)) {
-  LOWERCASE_MAP_FR.set(key.toLowerCase(), value);
-}
+const CACHES: Record<string, LocaleCache> = {
+  "pt-br": buildCache(ptDict as DictMap),
+  "pt": buildCache(ptDict as DictMap),
+  "es": buildCache(esDict as DictMap),
+  "fr": buildCache(frDict as DictMap),
+  "de": buildCache(deDict as DictMap),
+  "it": buildCache(itDict as DictMap),
+  "ja": buildCache(jaDict as DictMap),
+  "zh-cn": buildCache(zhDict as DictMap),
+  "zh": buildCache(zhDict as DictMap),
+};
 
 const PATTERNS_PT: [RegExp, string][] = [
   // Tempo relativo
@@ -70,6 +88,9 @@ const lastTranslatedPlaceholder = new WeakMap<Element, string>();
 const originalTitles = new WeakMap<Element, string>();
 const lastTranslatedTitle = new WeakMap<Element, string>();
 
+const originalAriaLabels = new WeakMap<Element, string>();
+const lastTranslatedAria = new WeakMap<Element, string>();
+
 let observer: MutationObserver | null = null;
 let isTranslating = false;
 
@@ -95,17 +116,11 @@ function shouldSkipElement(el: Element | null): boolean {
   );
 }
 
-function getActiveDictionary(locale: string): { dict: Record<string, string>; lowerMap: Map<string, string> } | null {
+function getActiveDictionary(locale: string): LocaleCache | null {
   const norm = locale.toLowerCase();
-  if (norm.startsWith("pt")) {
-    return { dict: UI_TRANSLATIONS, lowerMap: LOWERCASE_MAP_PT };
-  }
-  if (norm.startsWith("es")) {
-    return { dict: DICT_ES, lowerMap: LOWERCASE_MAP_ES };
-  }
-  if (norm.startsWith("fr")) {
-    return { dict: DICT_FR, lowerMap: LOWERCASE_MAP_FR };
-  }
+  if (CACHES[norm]) return CACHES[norm];
+  const short = norm.split("-")[0];
+  if (CACHES[short]) return CACHES[short];
   return null;
 }
 
@@ -116,12 +131,42 @@ function translateSinglePiece(raw: string, locale: string): string | null {
   const active = getActiveDictionary(locale);
   if (!active) return null;
 
-  // 1. Direct dictionary
+  // 1. Direct dictionary match
   if (active.dict[trimmed]) {
     return active.dict[trimmed];
   }
 
-  // 2. Case-insensitive
+  // 2. Trailing colon (e.g. "Status:", "Filter by:")
+  if (trimmed.endsWith(":")) {
+    const base = trimmed.slice(0, -1).trim();
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `${trans}:`;
+  }
+
+  // 3. Trailing ellipsis (e.g. "Search...", "Loading…")
+  if (trimmed.endsWith("...") || trimmed.endsWith("…")) {
+    const base = trimmed.replace(/\.{3}$|…$/, "").trim();
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `${trans}...`;
+  }
+
+  // 4. Parentheses (e.g. "(optional)", "(default)")
+  if (trimmed.startsWith("(") && trimmed.endsWith(")")) {
+    const base = trimmed.slice(1, -1).trim();
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `(${trans})`;
+  }
+
+  // 5. Keyboard shortcut suffix (e.g. "New Task (⌘K)", "Search (Ctrl+K)")
+  const shortcutMatch = trimmed.match(/^(.*?)\s*(\([⌘⌃⌥⇧A-Za-z0-9+-]+\))$/);
+  if (shortcutMatch) {
+    const base = shortcutMatch[1].trim();
+    const shortcut = shortcutMatch[2];
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `${trans} ${shortcut}`;
+  }
+
+  // 6. Case-insensitive lookup
   const lower = trimmed.toLowerCase();
   const lowerMatch = active.lowerMap.get(lower);
   if (lowerMatch) {
@@ -131,7 +176,7 @@ function translateSinglePiece(raw: string, locale: string): string | null {
     return lowerMatch;
   }
 
-  // 3. Patterns (pt-BR)
+  // 7. Regex patterns (pt-BR)
   if (locale.toLowerCase().startsWith("pt")) {
     for (const [regex, repl] of PATTERNS_PT) {
       if (regex.test(trimmed)) {
@@ -143,7 +188,7 @@ function translateSinglePiece(raw: string, locale: string): string | null {
   return null;
 }
 
-function translateText(text: string, locale: string): string | null {
+export function translateText(text: string, locale: string): string | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
@@ -179,7 +224,7 @@ function translateText(text: string, locale: string): string | null {
   return null;
 }
 
-function processNode(node: Node, targetLocale: string) {
+export function processNode(node: Node, targetLocale: string) {
   const isEnglish = targetLocale.toLowerCase().startsWith("en");
 
   if (node.nodeType === Node.TEXT_NODE) {
@@ -251,6 +296,27 @@ function processNode(node: Node, targetLocale: string) {
       }
     }
 
+    // Aria Labels (Tooltips, Action Buttons, Icon Buttons)
+    const currentAria = el.getAttribute("aria-label");
+    if (currentAria) {
+      if (!isEnglish) {
+        if (currentAria !== lastTranslatedAria.get(el)) {
+          originalAriaLabels.set(el, currentAria);
+        }
+        const orig = originalAriaLabels.get(el) ?? currentAria;
+        const translated = translateText(orig, targetLocale);
+        if (translated && el.getAttribute("aria-label") !== translated) {
+          lastTranslatedAria.set(el, translated);
+          el.setAttribute("aria-label", translated);
+        }
+      } else {
+        const orig = originalAriaLabels.get(el);
+        if (orig && el.getAttribute("aria-label") !== orig) {
+          el.setAttribute("aria-label", orig);
+        }
+      }
+    }
+
     // Children
     const children = el.childNodes;
     for (let i = 0; i < children.length; i++) {
@@ -259,7 +325,7 @@ function processNode(node: Node, targetLocale: string) {
   }
 }
 
-export function applyTranslations() {
+export function applyTranslations(targetRoot?: Node) {
   if (typeof window === "undefined" || !document.body) return;
   const savedLocale = localStorage.getItem("paperclip_locale");
   const locale = (savedLocale || "pt-BR").toLowerCase();
@@ -267,7 +333,7 @@ export function applyTranslations() {
   if (isTranslating) return;
   isTranslating = true;
   try {
-    processNode(document.body, locale);
+    processNode(targetRoot ?? document.body, locale);
   } finally {
     isTranslating = false;
   }
@@ -283,11 +349,22 @@ export function initAutoTranslator() {
     applyTranslations();
   }
 
-  // Observe dynamically loaded DOM nodes
+  // Observe dynamically loaded DOM nodes (Popovers, Tooltips, Modals, Feed updates)
   if (!observer) {
     let frameId: number | null = null;
-    observer = new MutationObserver(() => {
+    observer = new MutationObserver((mutations) => {
       if (isTranslating) return;
+      const savedLocale = localStorage.getItem("paperclip_locale") || "pt-BR";
+      
+      // Instantly translate newly added elements synchronously (e.g. Radix Tooltips/Popovers)
+      for (let m = 0; m < mutations.length; m++) {
+        const mutation = mutations[m];
+        for (let i = 0; i < mutation.addedNodes.length; i++) {
+          processNode(mutation.addedNodes[i], savedLocale);
+        }
+      }
+
+      // Debounce full-tree check
       if (frameId) cancelAnimationFrame(frameId);
       frameId = requestAnimationFrame(() => {
         applyTranslations();

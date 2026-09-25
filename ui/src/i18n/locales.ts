@@ -52,8 +52,35 @@ for (const [locale, messages] of Object.entries(localeMessages)) {
 
 export const supportedLocales = Object.keys(localeMessages);
 
+const dictModules = (
+  import.meta as unknown as {
+    glob: (pattern: string, options: { eager: boolean; import: string }) => Record<string, Record<string, string>>;
+  }
+).glob("./generated-dicts/*.json", {
+  eager: true,
+  import: "default",
+});
+
+const dictByLocale = Object.fromEntries(
+  Object.entries(dictModules).map(([path, dict]) => {
+    const locale = path.match(/\/([A-Za-z0-9_-]+)\.json$/)?.[1];
+    return [locale, dict];
+  }),
+);
+
 export const i18nextResources: Resource = Object.fromEntries(
-  Object.entries(localeMessages).map(([locale, messages]) => [locale, { translation: messages }]),
+  Object.entries(localeMessages).map(([locale, messages]) => {
+    const flatDict = dictByLocale[locale] ?? {};
+    return [
+      locale,
+      {
+        translation: {
+          ...(typeof messages === "object" && messages !== null ? messages : {}),
+          ...flatDict,
+        },
+      },
+    ];
+  }),
 ) as Resource;
 
 export type SupportedLocale = keyof typeof localeMessages;

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
+import { useTranslation } from "@/i18n";
 
 type NotFoundScope = "board" | "invalid_company_prefix" | "global";
 
@@ -16,11 +17,12 @@ interface NotFoundPageProps {
 export function NotFoundPage({ scope = "global", requestedPrefix }: NotFoundPageProps) {
   const location = useLocation();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { t } = useTranslation();
   const { companies, selectedCompany } = useCompany();
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Not Found" }]);
-  }, [setBreadcrumbs]);
+    setBreadcrumbs([{ label: t("Not Found") }]);
+  }, [setBreadcrumbs, t]);
 
   const fallbackCompany = selectedCompany ?? companies[0] ?? null;
   const dashboardHref = fallbackCompany ? `/${fallbackCompany.issuePrefix}/dashboard` : "/";

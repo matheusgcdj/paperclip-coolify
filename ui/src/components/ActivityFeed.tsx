@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ListFilter, Layers, ChevronDown, ChevronRight, User, Settings } from "lucide-react";
 import { timeAgo } from "../lib/timeAgo";
+import { useTranslation } from "@/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Event Tier Classification                                          */
@@ -118,6 +119,13 @@ const FILTER_OPTIONS: Array<{ value: FilterValue; label: string }> = [
   { value: "for-review", label: "In Review" },
   { value: "completed", label: "Done" },
 ];
+
+function filterLabel(label: string): string {
+  if (label === "All") return "All";
+  if (label === "In Progress") return "In Progress";
+  if (label === "In Review") return "In Review";
+  return "Done";
+}
 
 const FILTER_ACTIONS: Record<FilterValue, Set<string> | null> = {
   all: null,
@@ -321,6 +329,7 @@ interface ActivityFeedProps {
 }
 
 export function ActivityFeed({ className }: ActivityFeedProps) {
+  const { t } = useTranslation();
   const { selectedCompanyId } = useCompany();
   const [filter, setFilter] = useState<FilterValue>("all");
   const [groupMode, setGroupMode] = useState<GroupMode>("flat");
@@ -486,7 +495,7 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
           <div className="flex items-center gap-2 px-4 py-1.5" key={`sep-${index}`}>
             <div className="h-px flex-1 bg-border" />
             <span className="text-(length:--text-nano) font-medium text-muted-foreground uppercase tracking-wider">
-              Earlier
+              {t("Earlier")}
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
@@ -568,7 +577,7 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
       const issueName = entityNameMap.get(`issue:${groupKey}`);
       const issueTitle = entityTitleMap.get(`issue:${groupKey}`);
       const label = isOther
-        ? "Other activity"
+        ? t("Other activity")
         : `${issueName ?? groupKey}${issueTitle ? ` — ${issueTitle}` : ""}`;
 
       return (
@@ -590,19 +599,19 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
     if (!agents) return null;
     if (agents.length === 0) {
       return {
-        text: "No agents set up yet. Add an agent to get started.",
+        text: t("No agents set up yet. Add an agent to get started."),
         showPulse: false,
       };
     }
     const allPaused = agents.every((a) => a.status === "paused");
     if (allPaused) {
       return {
-        text: "All agents are paused. Resume agents from the sidebar to see activity.",
+        text: t("All agents are paused. Resume agents from the sidebar to see activity."),
         showPulse: false,
       };
     }
     return {
-      text: "Your agents are running — activity will appear here shortly.",
+      text: t("Your agents are running — activity will appear here shortly."),
       showPulse: true,
     };
   }, [agents]);
@@ -621,9 +630,9 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
           aria-hidden
         />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold">Agent Feed</h3>
+          <h3 className="text-sm font-semibold">{t("Agent Feed")}</h3>
           <p className="text-xs text-muted-foreground">
-            Live activity from your agents
+            {t("Live activity from your agents")}
           </p>
         </div>
         <div className="flex items-center gap-1">
@@ -641,9 +650,7 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
                 <Layers className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {groupMode === "flat" ? "Group by task" : "Show flat"}
-            </TooltipContent>
+            <TooltipContent side="bottom">{groupMode === "flat" ? t("Group by task") : t("Show flat")}</TooltipContent>
           </Tooltip>
 
           {/* Filter dropdown */}
@@ -662,7 +669,7 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Filter by</TooltipContent>
+              <TooltipContent side="bottom">{t("Filter by")}</TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuRadioGroup
@@ -671,7 +678,7 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
               >
                 {FILTER_OPTIONS.map(({ value, label }) => (
                   <DropdownMenuRadioItem key={value} value={value}>
-                    {label}
+                    {t(filterLabel(label))}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
@@ -680,7 +687,7 @@ export function ActivityFeed({ className }: ActivityFeedProps) {
                 checked={showAllActivity}
                 onCheckedChange={(v) => setShowAllActivity(!!v)}
               >
-                Show all activity
+                {t("Show all activity")}
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
