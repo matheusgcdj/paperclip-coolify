@@ -149,6 +149,20 @@ function translateSinglePiece(raw: string, locale: string): string | null {
     if (trans) return `${trans}:`;
   }
 
+  // 2b. Trailing question mark (e.g. "What would you like to do?", "Are you sure?")
+  if (trimmed.endsWith("?") || normalized.endsWith("?")) {
+    const base = normalized.slice(0, -1).trim();
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `${trans}?`;
+  }
+
+  // 2c. Trailing exclamation mark (e.g. "Welcome!", "Success!")
+  if (trimmed.endsWith("!") || normalized.endsWith("!")) {
+    const base = normalized.slice(0, -1).trim();
+    const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
+    if (trans) return `${trans}!`;
+  }
+
   // 3. Trailing ellipsis (e.g. "Search...", "Loading…")
   if (trimmed.endsWith("...") || trimmed.endsWith("…") || normalized.endsWith("...") || normalized.endsWith("…")) {
     const base = normalized.replace(/\.{3}$|…$/, "").trim();

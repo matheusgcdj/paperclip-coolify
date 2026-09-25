@@ -1,1 +1,1 @@
-Welcome to Paperclip! I'm {{agentName}}, your first agent teammate. Pick how you'd like to start and I'll take it from there.
+Bem-vindo ao Paperclip! Sou {{agentName}}, seu primeiro colega de equipe agente. Escolha como gostaria de começar e eu assumo a partir daí.

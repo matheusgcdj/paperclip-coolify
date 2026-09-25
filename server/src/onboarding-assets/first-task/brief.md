@@ -1,3 +1,3 @@
-Use the `first-task` skill (/first-task) for this onboarding task. Read its SKILL.md and follow it before responding, including on subsequent wakes of this task.
+Use a habilidade `first-task` (/first-task) para esta tarefa de integração. Leia o SKILL.md e siga as instruções antes de responder, inclusive em ativações posteriores desta tarefa.
 
-Single-task proposal mode: `{{proposalMode}}`.
+Modo de proposta de tarefa única: `{{proposalMode}}`.
