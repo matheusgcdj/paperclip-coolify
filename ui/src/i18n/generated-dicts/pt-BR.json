@@ -10380,5 +10380,20 @@
   "I have a task in mind": "Tenho uma tarefa em mente",
   "Describe it and I'll propose how to get it done.": "Descreva-a e vou propor como realizá-la.",
   "A few questions about what you're building, then a short plan and the team to carry it out, for you to approve.": "Algumas perguntas sobre o que você está construindo, depois um plano conciso e a equipe para executá-lo, para sua aprovação.",
-  "Welcome to Paperclip! I'm {{agentName}}, your first agent teammate. Pick how you'd like to start and I'll take it from there.": "Bem-vindo ao Paperclip! Sou {{agentName}}, seu primeiro colega de equipe agente. Escolha como gostaria de começar e eu assumo a partir daí."
+  "Welcome to Paperclip! I'm {{agentName}}, your first agent teammate. Pick how you'd like to start and I'll take it from there.": "Bem-vindo ao Paperclip! Sou {{agentName}}, seu primeiro colega de equipe agente. Escolha como gostaria de começar e eu assumo a partir daí.",
+  "Agent assignment is fixed for this external task.": "A atribuição de agente é fixa para esta tarefa externa.",
+  "Browse files": "Navegar pelos arquivos",
+  "Browser setup prompt": "Prompt de configuração do navegador",
+  "Clipboard unavailable": "Área de transferência indisponível",
+  "Context task": "Tarefa de contexto",
+  "Continue your setup": "Continuar sua configuração",
+  "Copied setup prompt": "Prompt de configuração copiado",
+  "Could not copy": "Não foi possível copiar",
+  "Design guide example. This is a preview, not a real provider setup request.": "Exemplo do guia de design. Esta é uma prévia, não uma solicitação real de configuração de provedor.",
+  "Enable memory connectors": "Habilitar conectores de memória",
+  "Existing connections keep running.": "As conexões existentes continuam em execução.",
+  "External provider connected": "Provedor externo conectado",
+  "Failed to load health": "Falha ao carregar estado de integridade",
+  "Managed task": "Tarefa gerenciada",
+  "Enable MCP aggregators": "Habilitar agregadores MCP"
 }
