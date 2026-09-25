@@ -65,21 +65,24 @@ let isTranslating = false;
 
 function shouldSkipElement(el: Element | null): boolean {
   if (!el) return false;
-  const tag = el.tagName.toLowerCase();
   if (
+    el.closest(
+      "code, pre, kbd, samp, script, style, svg, [translate='no'], .monaco-editor, .cm-editor, [data-code-block], [data-terminal]"
+    )
+  ) {
+    return true;
+  }
+  const tag = el.tagName.toLowerCase();
+  return (
     tag === "script" ||
     tag === "style" ||
     tag === "code" ||
     tag === "pre" ||
     tag === "svg" ||
-    tag === "path"
-  ) {
-    return true;
-  }
-  if (el.getAttribute("translate") === "no" || el.closest('[translate="no"]')) {
-    return true;
-  }
-  return false;
+    tag === "path" ||
+    tag === "kbd" ||
+    tag === "samp"
+  );
 }
 
 function translateSinglePiece(raw: string): string | null {
