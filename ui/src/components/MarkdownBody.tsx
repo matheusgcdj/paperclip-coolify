@@ -13,6 +13,8 @@ import { issuesApi } from "../api/issues";
 import { queryKeys } from "../lib/queryKeys";
 import { parseIssueReferenceFromHref, remarkLinkIssueReferences } from "../lib/issue-reference";
 import { remarkLinkCaseReferences } from "../lib/case-reference";
+import { useTranslation } from "@/i18n";
+import { translateMarkdown } from "../i18n/auto-translate";
 
 const CASE_HREF_RE = /^\/cases\/([A-Z][A-Z0-9]*-C\d+)$/i;
 
@@ -722,6 +724,12 @@ function MarkdownBodyImpl({
   resolveWorkspaceFileRef,
 }: MarkdownBodyProps) {
   const { theme } = useTheme();
+  const { i18n } = useTranslation();
+  const currentLocale = i18n.language || "pt-BR";
+  const processedChildren = useMemo(() => {
+    if (typeof children !== "string") return children;
+    return translateMarkdown(children, currentLocale);
+  }, [children, currentLocale]);
   // Read company prefixes non-throwingly: MarkdownBody renders in surfaces that
   // may lack a CompanyProvider. A null context (or no companies yet) leaves
   // knownPrefixes undefined, which keeps issue auto-linking permissive.
@@ -946,7 +954,7 @@ function MarkdownBodyImpl({
         components={components}
         urlTransform={safeMarkdownUrlTransform}
       >
-        {children}
+        {processedChildren}
       </Markdown>
     </div>
   );

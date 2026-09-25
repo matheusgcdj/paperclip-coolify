@@ -144,11 +144,11 @@ export function BreadcrumbBar({ taskDetailLayout = false }: { taskDetailLayout?:
                           <span className="flex shrink-0 items-center self-center">{crumb.leading}</span>
                         )}
                         {!taskDetailLayout ? <CrumbIdentifier identifier={crumb.identifier} /> : null}
-                        <span className="min-w-0 truncate">{crumb.label}</span>
+                        <span className="min-w-0 truncate">{t(crumb.label)}</span>
                         {taskDetailLayout && isLast ? <CrumbIdentifier identifier={crumb.identifier} /> : null}
                       </BreadcrumbPage>
                     ) : (
-                      <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                      <BreadcrumbPage className="truncate">{t(crumb.label)}</BreadcrumbPage>
                     )
                   ) : (
                     <BreadcrumbLink asChild>
@@ -164,7 +164,7 @@ export function BreadcrumbBar({ taskDetailLayout = false }: { taskDetailLayout?:
                             <span className="flex shrink-0 items-center self-center">{crumb.leading}</span>
                           )}
                           {!taskDetailLayout ? <CrumbIdentifier identifier={crumb.identifier} /> : null}
-                          <span className="min-w-0 truncate">{crumb.label}</span>
+                          <span className="min-w-0 truncate">{t(crumb.label)}</span>
                           {taskDetailLayout && isLast ? <CrumbIdentifier identifier={crumb.identifier} /> : null}
                         </Link>
                       ) : (
@@ -175,7 +175,7 @@ export function BreadcrumbBar({ taskDetailLayout = false }: { taskDetailLayout?:
                             i === 0 && "font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground",
                           )}
                         >
-                          {crumb.label}
+                          {t(crumb.label)}
                         </Link>
                       )}
                     </BreadcrumbLink>
@@ -203,11 +203,11 @@ export function BreadcrumbBar({ taskDetailLayout = false }: { taskDetailLayout?:
                 <span className="flex shrink-0 items-center self-center">{breadcrumbs[0].leading}</span>
               )}
               <CrumbIdentifier identifier={breadcrumbs[0].identifier} />
-              <span className="truncate">{breadcrumbs[0].label}</span>
+              <span className="truncate">{t(breadcrumbs[0].label)}</span>
             </h1>
           ) : (
             <h1 className="text-sm font-semibold uppercase tracking-wider truncate">
-              {breadcrumbs[0].label}
+              {t(breadcrumbs[0].label)}
             </h1>
           )}
         </div>

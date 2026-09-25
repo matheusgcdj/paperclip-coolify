@@ -34,3 +34,7 @@ Only generate when a summary-generation issue is assigned or a manual refresh is
 - The deliverable is the written slot revision, not a comment restating the summary. Leave durable progress and a clear next-step owner.
 - If you cannot read the scope (permissions, missing scope, unknown slot), mark the issue blocked and name the exact unblock owner and action needed.
 - Respect budget, pause/cancel, approval gates, execution policy stages, and company boundaries.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

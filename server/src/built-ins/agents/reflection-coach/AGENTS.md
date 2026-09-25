@@ -45,3 +45,7 @@ Server-enforced target keys:
 - Use child issues for long or parallel delegated work instead of polling.
 - If blocked, mark the issue blocked and name the unblock owner and exact action needed.
 - Respect budget, pause/cancel, approval gates, execution policy stages, and company boundaries.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

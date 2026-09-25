@@ -261,8 +261,10 @@ function readBuiltInText(relativePath: string, fallbackText: string) {
   );
 }
 
+const AGENT_LANGUAGE_CLAUSE = `\n\n## Idioma e Comunicação\n\n- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.\n- Nunca responda em inglês quando o usuário ou a organização se comunicar em português.\n`;
+
 const skillsCatalogRoot = resolvePackageRoot("@paperclipai/skills-catalog");
-const REFLECTION_COACH_INSTRUCTIONS = readBuiltInText("reflection-coach/AGENTS.md", FALLBACK_REFLECTION_COACH_INSTRUCTIONS);
+const REFLECTION_COACH_INSTRUCTIONS = `${readBuiltInText("reflection-coach/AGENTS.md", FALLBACK_REFLECTION_COACH_INSTRUCTIONS)}${AGENT_LANGUAGE_CLAUSE}`;
 const REFLECTION_COACH_ROUTINE = readBuiltInText(
   "reflection-coach/routines/recent-agent-reflection.md",
   FALLBACK_REFLECTION_COACH_ROUTINE,
@@ -281,7 +283,7 @@ const REFLECTION_COACH_SKILL = readBuiltInTextWithFallback(
   FALLBACK_REFLECTION_COACH_SKILL,
 );
 
-const SUMMARIZER_INSTRUCTIONS = readBuiltInText("summarizer/AGENTS.md", FALLBACK_SUMMARIZER_INSTRUCTIONS);
+const SUMMARIZER_INSTRUCTIONS = `${readBuiltInText("summarizer/AGENTS.md", FALLBACK_SUMMARIZER_INSTRUCTIONS)}${AGENT_LANGUAGE_CLAUSE}`;
 const SUMMARIZER_ROUTINE = readBuiltInText(
   "summarizer/routines/refresh-stale-summaries.md",
   FALLBACK_SUMMARIZER_ROUTINE,

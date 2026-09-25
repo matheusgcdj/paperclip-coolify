@@ -1,5 +1,6 @@
 import { Link } from "@/lib/router";
 import { Menu } from "lucide-react";
+import { useTranslation } from "@/i18n";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useSidebar } from "../context/SidebarContext";
 import { useCompany } from "../context/CompanyContext";
@@ -40,6 +41,7 @@ function GlobalToolbar({ context }: { context: GlobalToolbarContext }) {
 }
 
 export function BreadcrumbBar() {
+  const { t } = useTranslation();
   const { breadcrumbs, mobileToolbar } = useBreadcrumbs();
   const { toggleSidebar, isMobile } = useSidebar();
   const { selectedCompanyId, selectedCompany } = useCompany();
@@ -94,11 +96,11 @@ export function BreadcrumbBar() {
                 <span className="flex shrink-0 items-center">{breadcrumbs[0].leading}</span>
               )}
               <CrumbIdentifier identifier={breadcrumbs[0].identifier} />
-              <span className="truncate">{breadcrumbs[0].label}</span>
+              <span className="truncate">{t(breadcrumbs[0].label)}</span>
             </h1>
           ) : (
             <h1 className="text-sm font-semibold uppercase tracking-wider truncate">
-              {breadcrumbs[0].label}
+              {t(breadcrumbs[0].label)}
             </h1>
           )}
         </div>
@@ -127,10 +129,10 @@ export function BreadcrumbBar() {
                             <span className="flex shrink-0 items-center">{crumb.leading}</span>
                           )}
                           <CrumbIdentifier identifier={crumb.identifier} />
-                          <span className="truncate">{crumb.label}</span>
+                          <span className="truncate">{t(crumb.label)}</span>
                         </BreadcrumbPage>
                       ) : (
-                        <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                        <BreadcrumbPage className="truncate">{t(crumb.label)}</BreadcrumbPage>
                       )
                     ) : (
                       <BreadcrumbLink asChild>
@@ -140,10 +142,10 @@ export function BreadcrumbBar() {
                               <span className="flex shrink-0 items-center">{crumb.leading}</span>
                             )}
                             <CrumbIdentifier identifier={crumb.identifier} />
-                            <span className="truncate">{crumb.label}</span>
+                            <span className="truncate">{t(crumb.label)}</span>
                           </Link>
                         ) : (
-                          <Link to={crumb.href} onClick={crumb.onClick}>{crumb.label}</Link>
+                          <Link to={crumb.href} onClick={crumb.onClick}>{t(crumb.label)}</Link>
                         )}
                       </BreadcrumbLink>
                     )}

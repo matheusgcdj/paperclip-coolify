@@ -32,3 +32,7 @@ When you wake up, follow the Paperclip skill — it contains the full heartbeat 
 
 - Never commit secrets, credentials, or customer data. If you spot any in a diff, stop and escalate.
 - Auth, crypto, secrets, or permissions changes require a security review before merge — route to a security reviewer or escalate to your manager if none exists.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

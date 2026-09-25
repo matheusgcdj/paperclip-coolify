@@ -566,6 +566,18 @@ function rewriteAgentCatalogSkillRefs(team: CatalogTeam, files: Record<string, C
   }
 }
 
+function appendLanguageClauseToAgents(files: Record<string, CompanyPortabilityFileEntry>) {
+  for (const agentPath of Object.keys(files).filter((filePath) => filePath.endsWith("/AGENTS.md") || filePath === "AGENTS.md")) {
+    const content = files[agentPath];
+    if (typeof content !== "string") continue;
+    const parsed = parseFrontmatterMarkdown(content);
+    if (!parsed.body.includes("Idioma e Comunicação")) {
+      const updatedBody = `${parsed.body.trim()}\n\n## Idioma e Comunicação\n\n- Comunique-se, formule perguntas, crie tarefas e elabore planos/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.\n- Nunca responda em inglês quando o usuário ou a organização se comunicar em português.\n`;
+      files[agentPath] = renderSimpleMarkdown(parsed.frontmatter, updatedBody);
+    }
+  }
+}
+
 function preparation(
   requirement: CatalogTeamSkillRequirement,
   action: CatalogTeamSkillPreparationAction,
@@ -798,6 +810,7 @@ export function teamsCatalogService(db: Db) {
     const generatedExtension = parseYamlDocument(await renderCatalogProvenanceYaml(team, targetManager));
     files[".paperclip.yaml"] = renderYamlFile(mergePlainRecords(existingExtension, generatedExtension));
     rewriteAgentCatalogSkillRefs(team, files);
+    appendLanguageClauseToAgents(files);
 
     return {
       team,

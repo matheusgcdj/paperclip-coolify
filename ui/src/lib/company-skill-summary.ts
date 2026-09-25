@@ -1,3 +1,6 @@
+import { translateText } from "../i18n/auto-translate";
+import { getCurrentLocale } from "../i18n";
+
 type SkillSummaryInput = {
   tagline?: string | null;
   description?: string | null;
@@ -17,10 +20,22 @@ export function sanitizeSkillSummaryText(raw: string | null | undefined): string
 
 export function resolveSkillSummaryText(
   skill: SkillSummaryInput,
-  options: { fallbackKey?: boolean } = {},
+  options: { fallbackKey?: boolean; raw?: boolean } = {},
 ): string | null {
   const summary = sanitizeSkillSummaryText(skill.tagline) ?? sanitizeSkillSummaryText(skill.description);
-  if (summary) return summary;
+  if (summary) {
+    if (options.raw) return summary;
+    try {
+      const locale = getCurrentLocale();
+      if (locale && !locale.toLowerCase().startsWith("en")) {
+        const trans = translateText(summary, locale);
+        if (trans) return trans;
+      }
+    } catch {
+      // Ignore if called outside browser runtime
+    }
+    return summary;
+  }
 
   if (options.fallbackKey) {
     const fallbackKey = skill.key?.trim();

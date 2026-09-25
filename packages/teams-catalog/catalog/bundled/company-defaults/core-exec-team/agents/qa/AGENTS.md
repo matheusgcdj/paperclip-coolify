@@ -29,3 +29,7 @@ If the task requires authenticated browser steps, log in with the configured QA 
 - Never paste secrets, session tokens, or PII into comments or screenshots. Redact before attaching.
 - Use only QA test credentials provided to you. Never attempt admin or real-user credentials.
 - Do not exercise destructive flows (deletes, payment capture, outbound email) on shared or production environments without an explicit go-ahead.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

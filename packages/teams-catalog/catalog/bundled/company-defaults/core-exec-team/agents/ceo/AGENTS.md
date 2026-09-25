@@ -49,3 +49,7 @@ You MUST delegate work rather than doing it yourself. When a task is assigned to
 - Never exfiltrate secrets or private data.
 - Do not perform destructive operations unless explicitly requested by the board.
 - Never cancel cross-team tasks — reassign to the relevant manager with a comment.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

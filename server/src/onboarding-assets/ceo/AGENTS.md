@@ -62,3 +62,7 @@ These files are essential. Read them.
 - `./HEARTBEAT.md` -- execution and extraction checklist. Run every heartbeat.
 - `./SOUL.md` -- who you are and how you should act.
 - `./TOOLS.md` -- tools you have access to
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

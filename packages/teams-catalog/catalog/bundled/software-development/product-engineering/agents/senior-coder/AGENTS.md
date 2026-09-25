@@ -33,3 +33,7 @@ When you wake up, follow the Paperclip skill — it contains the full heartbeat 
 - Never commit secrets, credentials, or customer data.
 - Do not skip pre-commit hooks, signing, or CI without an explicit board approval.
 - Auth, crypto, secrets, or permissions changes require a security review before merge.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

@@ -725,13 +725,22 @@ export function agentInstructionsService() {
       normalizeRelativeFilePath(relativePath),
       content,
     ] as const);
+    const agentLanguageClause = `\n\n## Idioma e Comunicação\n\n- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.\n`;
     for (const [relativePath, content] of normalizedEntries) {
       const absolutePath = resolvePathWithinRoot(rootPath, relativePath);
       await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-      await fs.writeFile(absolutePath, content, "utf8");
+      let finalContent = content;
+      if (
+        (relativePath === entryFile || relativePath.endsWith("AGENTS.md")) &&
+        !finalContent.includes("Idioma e Comunicação") &&
+        !finalContent.includes("Language and Communication")
+      ) {
+        finalContent = `${finalContent.trimEnd()}${agentLanguageClause}`;
+      }
+      await fs.writeFile(absolutePath, finalContent, "utf8");
     }
     if (!normalizedEntries.some(([relativePath]) => relativePath === entryFile)) {
-      await fs.writeFile(resolvePathWithinRoot(rootPath, entryFile), "", "utf8");
+      await fs.writeFile(resolvePathWithinRoot(rootPath, entryFile), `# Instruções do Agente${agentLanguageClause}`, "utf8");
     }
 
     const adapterConfig = applyBundleConfig(asRecord(agent.adapterConfig), {

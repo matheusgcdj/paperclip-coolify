@@ -484,3 +484,94 @@ export function initAutoTranslator() {
     applyTranslations();
   });
 }
+
+export function translateMarkdown(markdown: string, locale: string): string {
+  if (!markdown || locale.toLowerCase().startsWith("en")) return markdown;
+
+  const lines = markdown.split("\n");
+  let inCode = false;
+  const translatedLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("```")) {
+      inCode = !inCode;
+      translatedLines.push(line);
+      continue;
+    }
+    if (inCode) {
+      translatedLines.push(line);
+      continue;
+    }
+
+    if (trimmed === "---") {
+      translatedLines.push(line);
+      continue;
+    }
+
+    // Headings: "# Title", "## Title"
+    const headerMatch = line.match(/^(\s*#{1,6}\s+)(.+)$/);
+    if (headerMatch) {
+      const prefix = headerMatch[1];
+      const text = headerMatch[2];
+      const trans = translateText(text, locale) ?? text;
+      translatedLines.push(`${prefix}${trans}`);
+      continue;
+    }
+
+    // Unordered lists: "- Item", "* Item"
+    const listMatch = line.match(/^(\s*[-*+]\s+)(.+)$/);
+    if (listMatch) {
+      const prefix = listMatch[1];
+      const text = listMatch[2];
+      const trans = translateText(text, locale) ?? text;
+      translatedLines.push(`${prefix}${trans}`);
+      continue;
+    }
+
+    // Ordered lists: "1. Item"
+    const orderedMatch = line.match(/^(\s*\d+\.\s+)(.+)$/);
+    if (orderedMatch) {
+      const prefix = orderedMatch[1];
+      const text = orderedMatch[2];
+      const trans = translateText(text, locale) ?? text;
+      translatedLines.push(`${prefix}${trans}`);
+      continue;
+    }
+
+    // Blockquotes: "> Quote"
+    const quoteMatch = line.match(/^(\s*>\s*)(.+)$/);
+    if (quoteMatch) {
+      const prefix = quoteMatch[1];
+      const text = quoteMatch[2];
+      const trans = translateText(text, locale) ?? text;
+      translatedLines.push(`${prefix}${trans}`);
+      continue;
+    }
+
+    // Table rows
+    if (line.includes("|") && trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      const cells = line.split("|");
+      const translatedCells = cells.map((cell) => {
+        const cellTrimmed = cell.trim();
+        if (!cellTrimmed || /^[:\s-]+$/.test(cellTrimmed)) return cell;
+        const leading = cell.match(/^\s*/)?.[0] ?? " ";
+        const trailing = cell.match(/\s*$/)?.[0] ?? " ";
+        const trans = translateText(cellTrimmed, locale) ?? cellTrimmed;
+        return `${leading}${trans}${trailing}`;
+      });
+      translatedLines.push(translatedCells.join("|"));
+      continue;
+    }
+
+    // Regular line / paragraph
+    if (trimmed.length > 0) {
+      const trans = translateText(line, locale) ?? line;
+      translatedLines.push(trans);
+    } else {
+      translatedLines.push(line);
+    }
+  }
+
+  return translatedLines.join("\n");
+}

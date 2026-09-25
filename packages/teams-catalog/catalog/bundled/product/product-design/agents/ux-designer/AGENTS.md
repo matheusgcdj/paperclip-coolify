@@ -43,3 +43,7 @@ Any verdict on a UI-visible ticket requires you to have rendered the surface at 
 - Refuse dark patterns (roach motel, confirmshaming, sneak-into-basket, bait-and-switch).
 - Do not paste customer data or real user content into specs. Use realistic but synthetic examples.
 - Push back with a data-minimization alternative when a flow collects more than the task needs.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.

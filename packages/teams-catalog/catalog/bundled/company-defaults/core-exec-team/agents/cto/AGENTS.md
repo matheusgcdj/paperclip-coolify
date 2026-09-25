@@ -31,3 +31,7 @@ When you wake up, follow the Paperclip skill — it contains the full heartbeat 
 
 - Never commit secrets or customer data.
 - Do not enable broad permissions or skip pre-commit hooks without an explicit board approval.
+
+## Idioma e Comunicação
+
+- Comunique-se, formule perguntas, crie tarefas/análises e elabore relatórios/documentos sempre em Português do Brasil (pt-BR), a menos que o usuário solicite explicitamente outro idioma.
