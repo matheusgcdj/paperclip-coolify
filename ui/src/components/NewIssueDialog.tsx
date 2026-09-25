@@ -1,3 +1,4 @@
+import { useWorkspaceIsolationControls } from "@/hooks/useWorkspaceIsolationControls";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { normalizeLegacyRunnerProvider } from "@paperclipai/adapter-utils";
 import { memo, useState, useEffect, useRef, useCallback, useMemo, type ChangeEvent, type CSSProperties, type DragEvent, type RefObject } from "react";
@@ -101,9 +102,24 @@ type NewIssueDialogViewportStyle = CSSProperties & {
   "--new-issue-dialog-height"?: string;
 };
 
+type MobileEntityPickerViewportStyle = CSSProperties & {
+  "--mobile-entity-picker-visual-viewport-height"?: string;
+  "--mobile-entity-picker-visual-viewport-bottom"?: string;
+};
+
 function readVisualViewportLayout(): VisualViewportLayout | null {
   if (typeof window === "undefined" || !window.visualViewport) return null;
   const { height, offsetTop } = window.visualViewport;
+  // Mobile browsers can briefly report unusable geometry while the visual
+  // viewport initializes or animates. Applying it collapses the dialog.
+  if (
+    !Number.isFinite(height)
+    || height <= 0
+    || !Number.isFinite(offsetTop)
+    || offsetTop < 0
+  ) {
+    return null;
+  }
   return {
     height,
     offsetTop,
@@ -125,7 +141,11 @@ function useVisualViewportLayout(enabled: boolean) {
     const viewport = window.visualViewport;
     if (!viewport) return;
 
-    const updateLayout = () => setLayout(readVisualViewportLayout());
+    const updateLayout = () => {
+      const nextLayout = readVisualViewportLayout();
+      // Keep the last valid keyboard geometry during transient invalid readings.
+      if (nextLayout) setLayout(nextLayout);
+    };
     updateLayout();
     viewport.addEventListener("resize", updateLayout);
     viewport.addEventListener("scroll", updateLayout);
@@ -462,6 +482,7 @@ const IssueDescriptionEditor = memo(function IssueDescriptionEditor({
 
 export function NewIssueDialog() {
   const { t } = useTranslation();
+  const { visible: workspaceIsolationControlsVisible } = useWorkspaceIsolationControls();
   const { newIssueOpen, newIssueDefaults, closeNewIssue } = useDialog();
   const visualViewportLayout = useVisualViewportLayout(newIssueOpen);
   const dialogBodyRef = useRef<HTMLDivElement>(null);
@@ -553,7 +574,7 @@ export function NewIssueDialog() {
         projectWorkspaceId: projectWorkspaceId || undefined,
         reuseEligible: true,
       }),
-    enabled: Boolean(effectiveCompanyId) && newIssueOpen && Boolean(projectId),
+    enabled: Boolean(effectiveCompanyId) && newIssueOpen && Boolean(projectId) && workspaceIsolationControlsVisible,
   });
   const { data: session } = useQuery({
     queryKey: queryKeys.auth.session,
@@ -1033,8 +1054,9 @@ export function NewIssueDialog() {
       chrome: assigneeChrome,
     });
     const selectedProject = orderedProjects.find((project) => project.id === projectId);
+    // Hidden selectors must not submit a restored draft over the managed default.
     const executionWorkspacePolicy =
-      experimentalSettings?.enableIsolatedWorkspaces === true
+      workspaceIsolationControlsVisible && experimentalSettings?.enableIsolatedWorkspaces === true
         ? selectedProject?.executionWorkspacePolicy ?? null
         : null;
     const selectedReusableExecutionWorkspace = selectableReusableWorkspaces.find(
@@ -1047,6 +1069,12 @@ export function NewIssueDialog() {
     const executionWorkspaceSettings = executionWorkspacePolicy?.enabled
       ? { mode: requestedExecutionWorkspaceMode }
       : null;
+    // A task launched from a workspace (or its parent task) keeps that explicit
+    // context. Draft-only choices are ignored while the selector is hidden.
+    const contextualWorkspaceId = !workspaceIsolationControlsVisible
+      && newIssueDefaults.projectId === projectId
+      ? newIssueDefaults.executionWorkspaceId
+      : undefined;
     const executionPolicy = buildExecutionPolicy({
       reviewerValues: reviewerValue ? [reviewerValue] : [],
       approverValues: approverValue ? [approverValue] : [],
@@ -1067,10 +1095,11 @@ export function NewIssueDialog() {
       ...(projectWorkspaceId ? { projectWorkspaceId } : {}),
       ...(assigneeAdapterOverrides ? { assigneeAdapterOverrides } : {}),
       ...(executionWorkspacePolicy?.enabled ? { executionWorkspacePreference: executionWorkspaceMode } : {}),
-      ...(executionWorkspaceMode === "reuse_existing" && selectedExecutionWorkspaceId
+      ...(workspaceIsolationControlsVisible && executionWorkspaceMode === "reuse_existing" && selectedExecutionWorkspaceId
         ? { executionWorkspaceId: selectedExecutionWorkspaceId }
         : {}),
       ...(executionWorkspaceSettings ? { executionWorkspaceSettings } : {}),
+      ...(contextualWorkspaceId ? { executionWorkspaceId: contextualWorkspaceId, executionWorkspacePreference: "reuse_existing" } : {}),
       ...(executionPolicy ? { executionPolicy } : {}),
       ...(watchdogAgentId
         ? { watchdog: { agentId: watchdogAgentId, instructions: watchdogInstructions.trim() || null } }
@@ -1319,6 +1348,13 @@ export function NewIssueDialog() {
         : {}),
     };
   }, [visualViewportLayout]);
+  const entityPickerViewportStyle = useMemo<MobileEntityPickerViewportStyle>(() => {
+    if (!visualViewportLayout) return {};
+    return {
+      "--mobile-entity-picker-visual-viewport-height": `${visualViewportLayout.height}px`,
+      "--mobile-entity-picker-visual-viewport-bottom": `${visualViewportLayout.offsetTop + visualViewportLayout.height}px`,
+    };
+  }, [visualViewportLayout]);
 
   useEffect(() => {
     if (!visualViewportLayout?.constrained) return;
@@ -1483,7 +1519,7 @@ export function NewIssueDialog() {
                 placeholder={t("Assignee")}
                 className="h-8 px-2.5 py-0 sm:h-auto sm:px-2 sm:py-1"
                 triggerDataSlot="new-issue-compact-control"
-                disablePortal
+                contentStyle={entityPickerViewportStyle}
                 noneLabel={t("No assignee")}
                 searchPlaceholder={t("Search assignees...")}
                 emptyMessage={t("No assignees found.")}
@@ -1544,7 +1580,7 @@ export function NewIssueDialog() {
                 placeholder="Project"
                 className="h-8 px-2.5 py-0 sm:h-auto sm:px-2 sm:py-1"
                 triggerDataSlot="new-issue-compact-control"
-                disablePortal
+                contentStyle={entityPickerViewportStyle}
                 noneLabel="No project"
                 searchPlaceholder="Search projects..."
                 emptyMessage="No projects found."
@@ -1655,7 +1691,7 @@ export function NewIssueDialog() {
                 options={assigneeOptions}
                 recentOptionIds={recentAssigneeOptionIds}
                 placeholder="Reviewer"
-                disablePortal
+                contentStyle={entityPickerViewportStyle}
                 noneLabel="No reviewer"
                 searchPlaceholder="Search reviewers..."
                 emptyMessage="No reviewers found."
@@ -1700,7 +1736,7 @@ export function NewIssueDialog() {
                 options={assigneeOptions}
                 recentOptionIds={recentAssigneeOptionIds}
                 placeholder="Approver"
-                disablePortal
+                contentStyle={entityPickerViewportStyle}
                 noneLabel="No approver"
                 searchPlaceholder="Search approvers..."
                 emptyMessage="No approvers found."
@@ -1844,7 +1880,7 @@ export function NewIssueDialog() {
             </div>
           ) : null}
 
-          {currentProject && currentProjectSupportsExecutionWorkspace && (
+          {workspaceIsolationControlsVisible && currentProject && currentProjectSupportsExecutionWorkspace && (
             <div className="px-4 py-3 space-y-2">
             <div className="space-y-1.5">
               <div className="text-xs font-medium">Execution workspace</div>
@@ -1944,7 +1980,7 @@ export function NewIssueDialog() {
                       value={assigneeModelOverride}
                       options={modelOverrideOptions}
                       placeholder="Default model"
-                      disablePortal
+                      contentStyle={entityPickerViewportStyle}
                       noneLabel="Default model"
                       searchPlaceholder="Search models..."
                       emptyMessage="No models found."

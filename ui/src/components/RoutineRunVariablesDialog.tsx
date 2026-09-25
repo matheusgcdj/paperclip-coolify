@@ -1,3 +1,4 @@
+import { useWorkspaceIsolationControls } from "@/hooks/useWorkspaceIsolationControls";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "@/i18n";
@@ -256,7 +257,8 @@ export function RoutineRunVariablesDialog({
     retry: false,
   });
 
-  const workspaceSelectionEnabled = supportsRoutineRunWorkspaceSelection(
+  const { visible: workspaceIsolationControlsVisible } = useWorkspaceIsolationControls();
+  const workspaceSelectionEnabled = workspaceIsolationControlsVisible && supportsRoutineRunWorkspaceSelection(
     selectedProject,
     experimentalSettings?.enableIsolatedWorkspaces === true,
   );
@@ -274,9 +276,11 @@ export function RoutineRunVariablesDialog({
     setWorkspaceBranchName(defaultExecutionWorkspace?.branchName ?? null);
   }, [defaultAssigneeAgentId, defaultExecutionWorkspace, defaultProjectId, open, projects, variables]);
 
-  const workspaceBranchAutoValue = workspaceSelectionEnabled && workspaceBranchName
+  const workspaceBranchAutoValue = workspaceSelectionEnabled
     ? workspaceBranchName
-    : null;
+    : defaultExecutionWorkspace?.projectId === selection.projectId
+      ? defaultExecutionWorkspace?.branchName ?? null
+      : null;
 
   const isAutoWorkspaceBranchVariable = useCallback(
     (variable: RoutineVariable) =>
