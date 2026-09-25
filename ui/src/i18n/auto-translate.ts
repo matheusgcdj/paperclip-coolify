@@ -131,34 +131,40 @@ function translateSinglePiece(raw: string, locale: string): string | null {
   const active = getActiveDictionary(locale);
   if (!active) return null;
 
-  // 1. Direct dictionary match
+  // Normalize internal whitespace (newlines and indentation in JSX)
+  const normalized = trimmed.replace(/\s+/g, " ");
+
+  // 1. Direct dictionary match (exact or normalized)
   if (active.dict[trimmed]) {
     return active.dict[trimmed];
   }
+  if (active.dict[normalized]) {
+    return active.dict[normalized];
+  }
 
   // 2. Trailing colon (e.g. "Status:", "Filter by:")
-  if (trimmed.endsWith(":")) {
-    const base = trimmed.slice(0, -1).trim();
+  if (trimmed.endsWith(":") || normalized.endsWith(":")) {
+    const base = normalized.slice(0, -1).trim();
     const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
     if (trans) return `${trans}:`;
   }
 
   // 3. Trailing ellipsis (e.g. "Search...", "Loading…")
-  if (trimmed.endsWith("...") || trimmed.endsWith("…")) {
-    const base = trimmed.replace(/\.{3}$|…$/, "").trim();
+  if (trimmed.endsWith("...") || trimmed.endsWith("…") || normalized.endsWith("...") || normalized.endsWith("…")) {
+    const base = normalized.replace(/\.{3}$|…$/, "").trim();
     const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
     if (trans) return `${trans}...`;
   }
 
   // 4. Parentheses (e.g. "(optional)", "(default)")
-  if (trimmed.startsWith("(") && trimmed.endsWith(")")) {
-    const base = trimmed.slice(1, -1).trim();
+  if (normalized.startsWith("(") && normalized.endsWith(")")) {
+    const base = normalized.slice(1, -1).trim();
     const trans = active.dict[base] ?? active.lowerMap.get(base.toLowerCase());
     if (trans) return `(${trans})`;
   }
 
   // 5. Keyboard shortcut suffix (e.g. "New Task (⌘K)", "Search (Ctrl+K)")
-  const shortcutMatch = trimmed.match(/^(.*?)\s*(\([⌘⌃⌥⇧A-Za-z0-9+-]+\))$/);
+  const shortcutMatch = normalized.match(/^(.*?)\s*(\([⌘⌃⌥⇧A-Za-z0-9+-]+\))$/);
   if (shortcutMatch) {
     const base = shortcutMatch[1].trim();
     const shortcut = shortcutMatch[2];
@@ -166,9 +172,9 @@ function translateSinglePiece(raw: string, locale: string): string | null {
     if (trans) return `${trans} ${shortcut}`;
   }
 
-  // 6. Case-insensitive lookup
+  // 6. Case-insensitive lookup (both exact and normalized)
   const lower = trimmed.toLowerCase();
-  const lowerMatch = active.lowerMap.get(lower);
+  const lowerMatch = active.lowerMap.get(lower) ?? active.lowerMap.get(normalized.toLowerCase());
   if (lowerMatch) {
     if (trimmed.length > 1 && trimmed === trimmed.toUpperCase()) {
       return lowerMatch.toUpperCase();
@@ -179,8 +185,8 @@ function translateSinglePiece(raw: string, locale: string): string | null {
   // 7. Regex patterns (pt-BR)
   if (locale.toLowerCase().startsWith("pt")) {
     for (const [regex, repl] of PATTERNS_PT) {
-      if (regex.test(trimmed)) {
-        return trimmed.replace(regex, repl);
+      if (regex.test(normalized)) {
+        return normalized.replace(regex, repl);
       }
     }
   }
