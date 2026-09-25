@@ -15,7 +15,6 @@ import {
 import { Fragment, useMemo } from "react";
 import { PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { PluginLauncherOutlet, usePluginLaunchers } from "@/plugins/launchers";
-import { LanguageToggle } from "./LanguageToggle";
 
 type GlobalToolbarContext = { companyId: string | null; companyPrefix: string | null };
 
@@ -30,7 +29,6 @@ function GlobalToolbar({ context }: { context: GlobalToolbarContext }) {
   const { launchers } = usePluginLaunchers({ placementZones: ["globalToolbarButton"], companyId: context.companyId, enabled: !!context.companyId });
   return (
     <div className="ml-auto flex shrink-0 items-center gap-1.5 pl-2">
-      <LanguageToggle />
       {slots.length > 0 ? (
         <PluginSlotOutlet slotTypes={["globalToolbarButton"]} context={context} className="flex items-center gap-1" />
       ) : null}

@@ -1,11 +1,21 @@
-import { UI_TRANSLATIONS } from "./translations-dict";
+import { UI_TRANSLATIONS, DICT_ES, DICT_FR } from "./translations-dict";
 
-const LOWERCASE_TRANSLATIONS = new Map<string, string>();
+const LOWERCASE_MAP_PT = new Map<string, string>();
 for (const [key, value] of Object.entries(UI_TRANSLATIONS)) {
-  LOWERCASE_TRANSLATIONS.set(key.toLowerCase(), value);
+  LOWERCASE_MAP_PT.set(key.toLowerCase(), value);
 }
 
-const PATTERNS: [RegExp, string][] = [
+const LOWERCASE_MAP_ES = new Map<string, string>();
+for (const [key, value] of Object.entries(DICT_ES)) {
+  LOWERCASE_MAP_ES.set(key.toLowerCase(), value);
+}
+
+const LOWERCASE_MAP_FR = new Map<string, string>();
+for (const [key, value] of Object.entries(DICT_FR)) {
+  LOWERCASE_MAP_FR.set(key.toLowerCase(), value);
+}
+
+const PATTERNS_PT: [RegExp, string][] = [
   // Tempo relativo
   [/^(\d+)\s*(?:s|sec|secs|second|seconds)\s*ago$/i, "há $1 s"],
   [/^(\d+)\s*(?:m|min|mins|minute|minutes)\s*ago$/i, "há $1 min"],
@@ -85,18 +95,35 @@ function shouldSkipElement(el: Element | null): boolean {
   );
 }
 
-function translateSinglePiece(raw: string): string | null {
+function getActiveDictionary(locale: string): { dict: Record<string, string>; lowerMap: Map<string, string> } | null {
+  const norm = locale.toLowerCase();
+  if (norm.startsWith("pt")) {
+    return { dict: UI_TRANSLATIONS, lowerMap: LOWERCASE_MAP_PT };
+  }
+  if (norm.startsWith("es")) {
+    return { dict: DICT_ES, lowerMap: LOWERCASE_MAP_ES };
+  }
+  if (norm.startsWith("fr")) {
+    return { dict: DICT_FR, lowerMap: LOWERCASE_MAP_FR };
+  }
+  return null;
+}
+
+function translateSinglePiece(raw: string, locale: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
+  const active = getActiveDictionary(locale);
+  if (!active) return null;
+
   // 1. Direct dictionary
-  if (UI_TRANSLATIONS[trimmed]) {
-    return UI_TRANSLATIONS[trimmed];
+  if (active.dict[trimmed]) {
+    return active.dict[trimmed];
   }
 
   // 2. Case-insensitive
   const lower = trimmed.toLowerCase();
-  const lowerMatch = LOWERCASE_TRANSLATIONS.get(lower);
+  const lowerMatch = active.lowerMap.get(lower);
   if (lowerMatch) {
     if (trimmed.length > 1 && trimmed === trimmed.toUpperCase()) {
       return lowerMatch.toUpperCase();
@@ -104,22 +131,24 @@ function translateSinglePiece(raw: string): string | null {
     return lowerMatch;
   }
 
-  // 3. Patterns
-  for (const [regex, repl] of PATTERNS) {
-    if (regex.test(trimmed)) {
-      return trimmed.replace(regex, repl);
+  // 3. Patterns (pt-BR)
+  if (locale.toLowerCase().startsWith("pt")) {
+    for (const [regex, repl] of PATTERNS_PT) {
+      if (regex.test(trimmed)) {
+        return trimmed.replace(regex, repl);
+      }
     }
   }
 
   return null;
 }
 
-function translateText(text: string): string | null {
+function translateText(text: string, locale: string): string | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
   // Direct piece
-  const direct = translateSinglePiece(trimmed);
+  const direct = translateSinglePiece(trimmed, locale);
   if (direct) {
     const leading = text.match(/^\s*/)?.[0] ?? "";
     const trailing = text.match(/\s*$/)?.[0] ?? "";
@@ -129,7 +158,7 @@ function translateText(text: string): string | null {
   // Composed pieces with separators: " · ", ", ", " - "
   if (trimmed.includes(" · ")) {
     const parts = trimmed.split(" · ");
-    const translatedParts = parts.map((p) => translateSinglePiece(p) ?? p);
+    const translatedParts = parts.map((p) => translateSinglePiece(p, locale) ?? p);
     if (translatedParts.some((p, i) => p !== parts[i])) {
       const leading = text.match(/^\s*/)?.[0] ?? "";
       const trailing = text.match(/\s*$/)?.[0] ?? "";
@@ -139,7 +168,7 @@ function translateText(text: string): string | null {
 
   if (trimmed.includes(", ")) {
     const parts = trimmed.split(", ");
-    const translatedParts = parts.map((p) => translateSinglePiece(p) ?? p);
+    const translatedParts = parts.map((p) => translateSinglePiece(p, locale) ?? p);
     if (translatedParts.some((p, i) => p !== parts[i])) {
       const leading = text.match(/^\s*/)?.[0] ?? "";
       const trailing = text.match(/\s*$/)?.[0] ?? "";
@@ -150,18 +179,20 @@ function translateText(text: string): string | null {
   return null;
 }
 
-function processNode(node: Node, toPt: boolean) {
+function processNode(node: Node, targetLocale: string) {
+  const isEnglish = targetLocale.toLowerCase().startsWith("en");
+
   if (node.nodeType === Node.TEXT_NODE) {
     const parent = node.parentElement;
     if (shouldSkipElement(parent)) return;
 
     const currentVal = node.nodeValue ?? "";
-    if (toPt) {
+    if (!isEnglish) {
       if (currentVal !== lastTranslatedText.get(node)) {
         originalTextNodes.set(node, currentVal);
       }
       const original = originalTextNodes.get(node) ?? currentVal;
-      const translated = translateText(original);
+      const translated = translateText(original, targetLocale);
       if (translated && node.nodeValue !== translated) {
         lastTranslatedText.set(node, translated);
         node.nodeValue = translated;
@@ -180,12 +211,12 @@ function processNode(node: Node, toPt: boolean) {
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       const currentPlaceholder = el.placeholder;
       if (currentPlaceholder) {
-        if (toPt) {
+        if (!isEnglish) {
           if (currentPlaceholder !== lastTranslatedPlaceholder.get(el)) {
             originalPlaceholders.set(el, currentPlaceholder);
           }
           const orig = originalPlaceholders.get(el) ?? currentPlaceholder;
-          const translated = translateText(orig);
+          const translated = translateText(orig, targetLocale);
           if (translated && el.placeholder !== translated) {
             lastTranslatedPlaceholder.set(el, translated);
             el.placeholder = translated;
@@ -202,12 +233,12 @@ function processNode(node: Node, toPt: boolean) {
     // Titles
     const currentTitle = el.getAttribute("title");
     if (currentTitle) {
-      if (toPt) {
+      if (!isEnglish) {
         if (currentTitle !== lastTranslatedTitle.get(el)) {
           originalTitles.set(el, currentTitle);
         }
         const orig = originalTitles.get(el) ?? currentTitle;
-        const translated = translateText(orig);
+        const translated = translateText(orig, targetLocale);
         if (translated && el.getAttribute("title") !== translated) {
           lastTranslatedTitle.set(el, translated);
           el.setAttribute("title", translated);
@@ -223,7 +254,7 @@ function processNode(node: Node, toPt: boolean) {
     // Children
     const children = el.childNodes;
     for (let i = 0; i < children.length; i++) {
-      processNode(children[i], toPt);
+      processNode(children[i], targetLocale);
     }
   }
 }
@@ -232,12 +263,11 @@ export function applyTranslations() {
   if (typeof window === "undefined" || !document.body) return;
   const savedLocale = localStorage.getItem("paperclip_locale");
   const locale = (savedLocale || "pt-BR").toLowerCase();
-  const toPt = locale.startsWith("pt");
 
   if (isTranslating) return;
   isTranslating = true;
   try {
-    processNode(document.body, toPt);
+    processNode(document.body, locale);
   } finally {
     isTranslating = false;
   }

@@ -129,7 +129,7 @@ import {
 } from "./onboarding/Stepper";
 import { AgentPreview } from "./onboarding/AgentPreview";
 import { ModelSourceTiles, type CredentialMode } from "./onboarding/ModelSourceTiles";
-import { LanguageToggle } from "./LanguageToggle";
+import { LanguageSelector } from "./LanguageSelector";
 import { CredentialModeLink } from "./onboarding/CredentialModeLink";
 import { FooterNav, type FooterPrimaryIcon } from "./onboarding/FooterNav";
 import { OnboardingHeading } from "./onboarding/OnboardingPrimitives";
@@ -2479,9 +2479,6 @@ function OnboardingWizardInner({
               front-door choice ahead of it, and it fills the width on every
               step (the mission step's half-width split is gone). */}
           <div className="w-full flex flex-col overflow-y-auto">
-            <div className="w-full flex justify-end px-4 pt-3 sm:px-8 sm:pt-4 shrink-0 z-20">
-              <LanguageToggle />
-            </div>
             <div
               className={cn(
                 // my-auto, not items-center on the column: they look identical
@@ -2687,13 +2684,20 @@ function OnboardingWizardInner({
                   measure — the two questions the wizard asks present the same
                   target. */}
               {step === 1 && (
-                <motion.div key="step-1" {...stepContentMotion} exit={stepHandoff ? stepContentMotion.exit : undefined} className="mx-auto flex w-full flex-col gap-9">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="onboarding-company-name">{isPt ? "Nome da Empresa / Organização" : "Name"}</Label>
+                <motion.div key="step-1" {...stepContentMotion} exit={stepHandoff ? stepContentMotion.exit : undefined} className="mx-auto flex w-full flex-col gap-6">
+                  <div className="flex flex-col gap-2.5 pb-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {isPt ? "Selecione o idioma da interface" : "Select interface language"}
+                    </Label>
+                    <LanguageSelector variant="cards" />
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
+                    <Label htmlFor="onboarding-company-name">{isPt ? "Nome da Empresa / Organização" : "Organization Name"}</Label>
                     <Input
                       id="onboarding-company-name"
                       className="h-(--sz-44px) rounded-lg border-transparent bg-muted shadow-none dark:bg-muted"
-                      placeholder={isPt ? "ex: Northwind Labs" : "e.g. Northwind Labs"}
+                      placeholder={isPt ? "ex: Minha Empresa / Northwind Labs" : "e.g. Northwind Labs"}
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       onKeyDown={(e) => {
@@ -3291,20 +3295,20 @@ function OnboardingWizardInner({
                   // prototype's own local flow draws with "Next".
                   primaryLabel={
                     step === 1
-                      ? "Continue"
+                      ? isPt ? "Continuar" : "Continue"
                       : step === 5
-                        ? "Get started"
+                        ? isPt ? "Começar" : "Get started"
                         : step === 4
                           ? connectCta.label
-                          : "Next"
+                          : isPt ? "Avançar" : "Next"
                   }
                   primaryIcon={step === 4 ? connectCta.icon : undefined}
                   loadingLabel={
                     step === 1
-                      ? "Creating..."
+                      ? isPt ? "Criando..." : "Creating..."
                       : step === 4
-                        ? "Connecting"
-                        : "Launching..."
+                        ? isPt ? "Conectando..." : "Connecting"
+                        : isPt ? "Iniciando..." : "Launching..."
                   }
                   // The browser-code login is finished on this screen, so the
                   // button is genuinely busy for its duration and shows it. The

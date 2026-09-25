@@ -16,7 +16,6 @@ import {
 import { Fragment, useMemo, type ReactNode } from "react";
 import { PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { PluginLauncherOutlet, usePluginLaunchers } from "@/plugins/launchers";
-import { LanguageToggle } from "./LanguageToggle";
 import { cn } from "../lib/utils";
 
 type GlobalToolbarContext = { companyId: string | null; companyPrefix: string | null };
@@ -43,7 +42,6 @@ function GlobalToolbar({
   return (
     <div className="ml-auto flex shrink-0 items-center gap-1.5 pl-2">
       {pageToolbar}
-      <LanguageToggle />
       {slots.length > 0 ? (
         <PluginSlotOutlet slotTypes={["globalToolbarButton"]} context={context} className="flex items-center gap-1" />
       ) : null}

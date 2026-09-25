@@ -15,6 +15,7 @@ import { Button } from "../components/ui/button";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { cn } from "../lib/utils";
 import { useSignOut } from "@/hooks/useSignOut";
 
@@ -197,6 +198,18 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
         </div>
       </section>
       )}
+
+      <section>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
+          <div className="space-y-1.5">
+            <h2 className="text-sm font-semibold">Interface language</h2>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Choose the display language for the application across all pages, dialogs, and controls.
+            </p>
+          </div>
+          <LanguageSelector variant="select" />
+        </div>
+      </section>
 
       {showBackupRetention && (
       <section>
