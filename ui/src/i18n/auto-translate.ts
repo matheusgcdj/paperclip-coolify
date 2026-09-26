@@ -253,11 +253,13 @@ export function translateText(text: string, locale: string): string | null {
 
   if (trimmed.includes(", ")) {
     const parts = trimmed.split(", ");
-    const translatedParts = parts.map((p) => translateSinglePiece(p, locale) ?? p);
-    if (translatedParts.some((p, i) => p !== parts[i])) {
-      const leading = text.match(/^\s*/)?.[0] ?? "";
-      const trailing = text.match(/\s*$/)?.[0] ?? "";
-      return `${leading}${translatedParts.join(", ")}${trailing}`;
+    if (parts.length > 1 && parts.every((p) => p.trim().length <= 30 && p.trim().split(" ").length <= 4)) {
+      const translatedParts = parts.map((p) => translateSinglePiece(p, locale) ?? p);
+      if (translatedParts.some((p, i) => p !== parts[i])) {
+        const leading = text.match(/^\s*/)?.[0] ?? "";
+        const trailing = text.match(/\s*$/)?.[0] ?? "";
+        return `${leading}${translatedParts.join(", ")}${trailing}`;
+      }
     }
   }
 
@@ -485,6 +487,69 @@ export function initAutoTranslator() {
   });
 }
 
+function translateMarkdownContent(text: string, locale: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+
+  // 1. Direct translation
+  const direct = translateText(trimmed, locale);
+  if (direct && direct.trim() !== trimmed) {
+    const leading = text.match(/^\s*/)?.[0] ?? "";
+    const trailing = text.match(/\s*$/)?.[0] ?? "";
+    return `${leading}${direct.trim()}${trailing}`;
+  }
+
+  // 2. Bold label prefix e.g. **Auth mode:** rest of sentence or **Step 1:** rest
+  const boldPrefixMatch = trimmed.match(/^(\*\*[^*]+\*\*[:?]?)\s*(.+)$/);
+  if (boldPrefixMatch) {
+    const label = boldPrefixMatch[1];
+    const rest = boldPrefixMatch[2];
+    const transLabel = translateText(label, locale) ?? label;
+    const transRest = translateMarkdownContent(rest, locale);
+    const leading = text.match(/^\s*/)?.[0] ?? "";
+    const trailing = text.match(/\s*$/)?.[0] ?? "";
+    return `${leading}${transLabel} ${transRest}${trailing}`;
+  }
+
+  // 3. Inline code prefix with separator e.g. `CMD` — description
+  const codeDashMatch = trimmed.match(/^(`[^`]+`)\s*([—–-])\s*(.+)$/);
+  if (codeDashMatch) {
+    const codePart = codeDashMatch[1];
+    const sep = codeDashMatch[2];
+    const rest = codeDashMatch[3];
+    const transRest = translateMarkdownContent(rest, locale);
+    const leading = text.match(/^\s*/)?.[0] ?? "";
+    const trailing = text.match(/\s*$/)?.[0] ?? "";
+    return `${leading}${codePart} ${sep} ${transRest}${trailing}`;
+  }
+
+  // 4. Bold with parenthetical e.g. **Environment variables** (set by `...`):
+  const boldParenMatch = trimmed.match(/^(\*\*[^*]+\*\*)\s*(\([^)]+\))([:?]?)$/);
+  if (boldParenMatch) {
+    const boldPart = boldParenMatch[1];
+    const parenPart = boldParenMatch[2];
+    const punct = boldParenMatch[3];
+    const transBold = translateText(boldPart, locale) ?? boldPart;
+    const transParen = translateText(parenPart, locale) ?? parenPart;
+    const leading = text.match(/^\s*/)?.[0] ?? "";
+    const trailing = text.match(/\s*$/)?.[0] ?? "";
+    return `${leading}${transBold} ${transParen}${punct}${trailing}`;
+  }
+
+  // 5. Try stripped text (remove outer **...** or *...*)
+  if (trimmed.startsWith("**") && trimmed.endsWith("**") && trimmed.length > 4) {
+    const inner = trimmed.slice(2, -2);
+    const transInner = translateText(inner, locale);
+    if (transInner && transInner !== inner) {
+      const leading = text.match(/^\s*/)?.[0] ?? "";
+      const trailing = text.match(/\s*$/)?.[0] ?? "";
+      return `${leading}**${transInner}**${trailing}`;
+    }
+  }
+
+  return direct ?? text;
+}
+
 export function translateMarkdown(markdown: string, locale: string): string {
   if (!markdown || locale.toLowerCase().startsWith("en")) return markdown;
 
@@ -514,7 +579,7 @@ export function translateMarkdown(markdown: string, locale: string): string {
     if (headerMatch) {
       const prefix = headerMatch[1];
       const text = headerMatch[2];
-      const trans = translateText(text, locale) ?? text;
+      const trans = translateMarkdownContent(text, locale);
       translatedLines.push(`${prefix}${trans}`);
       continue;
     }
@@ -524,7 +589,7 @@ export function translateMarkdown(markdown: string, locale: string): string {
     if (listMatch) {
       const prefix = listMatch[1];
       const text = listMatch[2];
-      const trans = translateText(text, locale) ?? text;
+      const trans = translateMarkdownContent(text, locale);
       translatedLines.push(`${prefix}${trans}`);
       continue;
     }
@@ -534,7 +599,7 @@ export function translateMarkdown(markdown: string, locale: string): string {
     if (orderedMatch) {
       const prefix = orderedMatch[1];
       const text = orderedMatch[2];
-      const trans = translateText(text, locale) ?? text;
+      const trans = translateMarkdownContent(text, locale);
       translatedLines.push(`${prefix}${trans}`);
       continue;
     }
@@ -544,7 +609,7 @@ export function translateMarkdown(markdown: string, locale: string): string {
     if (quoteMatch) {
       const prefix = quoteMatch[1];
       const text = quoteMatch[2];
-      const trans = translateText(text, locale) ?? text;
+      const trans = translateMarkdownContent(text, locale);
       translatedLines.push(`${prefix}${trans}`);
       continue;
     }
@@ -557,7 +622,7 @@ export function translateMarkdown(markdown: string, locale: string): string {
         if (!cellTrimmed || /^[:\s-]+$/.test(cellTrimmed)) return cell;
         const leading = cell.match(/^\s*/)?.[0] ?? " ";
         const trailing = cell.match(/\s*$/)?.[0] ?? " ";
-        const trans = translateText(cellTrimmed, locale) ?? cellTrimmed;
+        const trans = translateMarkdownContent(cellTrimmed, locale);
         return `${leading}${trans}${trailing}`;
       });
       translatedLines.push(translatedCells.join("|"));
@@ -566,7 +631,7 @@ export function translateMarkdown(markdown: string, locale: string): string {
 
     // Regular line / paragraph
     if (trimmed.length > 0) {
-      const trans = translateText(line, locale) ?? line;
+      const trans = translateMarkdownContent(line, locale);
       translatedLines.push(trans);
     } else {
       translatedLines.push(line);

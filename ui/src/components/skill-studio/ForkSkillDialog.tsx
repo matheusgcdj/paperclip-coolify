@@ -10,6 +10,7 @@ import { companySkillsApi } from "@/api/companySkills";
 import { queryKeys } from "@/lib/queryKeys";
 import { skillStudioRoute } from "@/lib/company-skill-routes";
 import { useOptionalToastActions } from "@/context/ToastContext";
+import { useTranslation } from "@/i18n";
 import {
   agentUsageSentence,
   pickReusableFork,

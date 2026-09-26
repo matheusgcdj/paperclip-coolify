@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Lock, type LucideIcon } from "lucide-react";
 import { Link } from "@/lib/router";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SkillCardIcon, type SkillIconCard } from "../../components/SkillCardIcon";
@@ -65,6 +66,7 @@ export function AgentSkillRow({
   badge,
   accessory,
 }: AgentSkillRowProps) {
+  const { t } = useTranslation();
   const readOnly = variant === "readonly";
   const SourceIcon = data.sourceMeta?.icon;
 
@@ -77,23 +79,23 @@ export function AgentSkillRow({
           {badge ? <span className="shrink-0">{badge}</span> : null}
           {data.chip ? (
             <span className="hidden shrink-0 items-center rounded-full border border-border bg-muted/40 px-2 py-0.5 text-(length:--text-nano) capitalize text-muted-foreground sm:inline-flex">
-              {data.chip}
+              {t(data.chip)}
             </span>
           ) : null}
         </div>
         {data.summary ? (
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{data.summary}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{t(data.summary)}</p>
         ) : null}
         {data.sourceMeta && SourceIcon ? (
           <p className="mt-0.5 flex min-w-0 items-center gap-1 text-(length:--text-nano) text-muted-foreground/80">
             <SourceIcon className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">{data.sourceMeta.label}</span>
+            <span className="truncate">{t(data.sourceMeta.label)}</span>
           </p>
         ) : null}
         {readOnly && data.originLabel ? (
           <p className="mt-0.5 truncate text-(length:--text-nano) text-muted-foreground/80">
-            {data.originLabel}
-            {data.locationLabel ? ` · ${data.locationLabel}` : ""}
+            {t(data.originLabel)}
+            {data.locationLabel ? ` · ${t(data.locationLabel)}` : ""}
           </p>
         ) : null}
       </div>
@@ -120,7 +122,7 @@ export function AgentSkillRow({
   );
 
   const trailing = readOnly ? (
-    <Lock className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-label="Read-only" />
+    <Lock className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-label={t("Read only")} />
   ) : (
     (() => {
       const toggle = (
@@ -128,7 +130,7 @@ export function AgentSkillRow({
           checked={checked}
           disabled={disabled}
           onCheckedChange={(next) => onCheckedChange?.(next)}
-          aria-label={`${checked ? "Disable" : "Enable"} ${data.name}`}
+          aria-label={`${checked ? t("Disable") : t("Enable")} ${data.name}`}
         />
       );
       if (disabled && disabledReason) {
@@ -137,7 +139,7 @@ export function AgentSkillRow({
             <TooltipTrigger asChild>
               <span className="shrink-0">{toggle}</span>
             </TooltipTrigger>
-            <TooltipContent side="left">{disabledReason}</TooltipContent>
+            <TooltipContent side="left">{t(disabledReason)}</TooltipContent>
           </Tooltip>
         );
       }
