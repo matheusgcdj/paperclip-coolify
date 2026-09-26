@@ -125,6 +125,18 @@ export interface CompanySkillUsageAgent {
   versionId: string | null;
 }
 
+export interface CompanySkillTranslation {
+  name?: string | null;
+  description?: string | null;
+  tagline?: string | null;
+  markdown?: string | null;
+  phrases?: Record<string, string>;
+  translatedAt: string;
+  model?: string;
+}
+
+export type CompanySkillTranslations = Record<string, CompanySkillTranslation>;
+
 export interface CompanySkillDetail extends CompanySkill {
   attachedAgentCount: number;
   usedByAgents: CompanySkillUsageAgent[];

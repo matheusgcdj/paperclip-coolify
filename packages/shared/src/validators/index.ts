@@ -199,6 +199,8 @@ export {
   companySkillRenameSchema,
   companySkillRenameResultSchema,
   companySkillUpdateSchema,
+  companySkillTranslateSchema,
+  type CompanySkillTranslateRequest,
   companySkillUpdateStatusSchema,
   companySkillAuditFindingSchema,
   companySkillAuditResultSchema,

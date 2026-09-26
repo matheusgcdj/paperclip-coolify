@@ -3,7 +3,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { activityLog } from "@paperclipai/db";
 import { persistActivity, publishActivity } from "../services/activity-log.js";
 import { projectToolContext } from "../services/project-tool-context.js";
-import { Router, type Request } from "express";
+import { Router, type Request, type Response } from "express";
+import { logger } from "../middleware/logger.js";
 import type { Db } from "@paperclipai/db";
 import {
   catalogSkillListQuerySchema,
@@ -39,6 +40,7 @@ import {
   issueService,
   logActivity,
 } from "../services/index.js";
+import { translateAndSaveSkill } from "../services/skill-translation.js";
 import { isGitRepoSkillImportSource, parseSkillImportSourceInput } from "../services/company-skills.js";
 import {
   getCatalogSkillOrThrow,
@@ -905,6 +907,35 @@ export function companySkillRoutes(db: Db) {
     },
   );
 
+  router.post("/companies/:companyId/skills/:skillId/translate", async (req: Request, res: Response) => {
+    const companyId = req.params.companyId as string;
+    const skillId = req.params.skillId as string;
+    assertCompanyAccess(req, companyId);
+    const targetLocale = typeof req.body?.targetLocale === "string" ? req.body.targetLocale : "pt-BR";
+    const force = Boolean(req.body?.force);
+    try {
+      const result = await translateAndSaveSkill(db, companyId, skillId, targetLocale, { force });
+      res.json(result);
+    } catch (err: any) {
+      logger.error({ error: err, companyId, skillId }, "Failed to translate skill");
+      res.status(500).json({ error: err.message || "Failed to translate skill" });
+    }
+  });
+
+  router.get("/companies/:companyId/skills/:skillId/translation", async (req: Request, res: Response) => {
+    const companyId = req.params.companyId as string;
+    const skillId = req.params.skillId as string;
+    assertCompanyAccess(req, companyId);
+    const locale = typeof req.query.locale === "string" ? (req.query.locale as string) : "pt-BR";
+    try {
+      const skill = await svc.getById(companyId, skillId);
+      const translations = ((skill.metadata as any)?.translations?.[locale]) ?? null;
+      res.json({ locale, translation: translations });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to get translation" });
+    }
+  });
+
   router.get("/companies/:companyId/skills/:skillId/comments", async (req, res) => {
     const companyId = req.params.companyId as string;
     const skillId = req.params.skillId as string;
@@ -1032,6 +1063,9 @@ export function companySkillRoutes(db: Db) {
       if (!idempotencyKey) {
         const skill = await svc.createLocalSkill(companyId, input, skillActor(req));
         await logActivity(db, event(skill));
+        translateAndSaveSkill(db, companyId, skill.id, "pt-BR").catch((err) => {
+          logger.warn({ error: err, skillId: skill.id }, "Auto-translation of new skill failed");
+        });
         res.status(201).json(skill);
         return;
       }
@@ -1060,6 +1094,11 @@ export function companySkillRoutes(db: Db) {
         return { skill, publication: activity.publication, duplicate: false };
       });
       if (result.publication) publishActivity(result.publication);
+      if (!result.duplicate) {
+        translateAndSaveSkill(db, companyId, result.skill.id, "pt-BR").catch((err) => {
+          logger.warn({ error: err, skillId: result.skill.id }, "Auto-translation of new skill failed");
+        });
+      }
       res.status(result.duplicate ? 200 : 201).json(result.skill);
     },
   );
@@ -1126,6 +1165,12 @@ export function companySkillRoutes(db: Db) {
           markdown: result.markdown,
         },
       });
+
+      if (result.path === "SKILL.md") {
+        translateAndSaveSkill(db, companyId, skillId, "pt-BR", { force: true }).catch((err) => {
+          logger.warn({ error: err, skillId }, "Auto-translation of updated SKILL.md failed");
+        });
+      }
 
       res.json(result);
     },
@@ -1199,6 +1244,12 @@ export function companySkillRoutes(db: Db) {
         }
       }
 
+      for (const skill of result.imported) {
+        translateAndSaveSkill(db, companyId, skill.id, "pt-BR").catch((err) => {
+          logger.warn({ error: err, skillId: skill.id }, "Auto-translation of imported skill failed");
+        });
+      }
+
       res.status(201).json(result);
     },
   );
@@ -1233,6 +1284,10 @@ export function companySkillRoutes(db: Db) {
           originHash: result.catalogSkill.contentHash,
           warningCount: result.warnings.length,
         },
+      });
+
+      translateAndSaveSkill(db, companyId, result.skill.id, "pt-BR").catch((err) => {
+        logger.warn({ error: err, skillId: result.skill.id }, "Auto-translation of installed catalog skill failed");
       });
 
       res.status(result.action === "created" ? 201 : 200).json(result);

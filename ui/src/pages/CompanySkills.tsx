@@ -28,7 +28,7 @@ import { foldersApi } from "../api/folders";
 import { agentsApi } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs, type Breadcrumb } from "../context/BreadcrumbContext";
-import { t, useTranslation } from "@/i18n";
+import { t, useTranslation, getCurrentLocale } from "@/i18n";
 import { useToastActions } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { copyTextToClipboard } from "../lib/clipboard";
@@ -165,6 +165,8 @@ import {
   Settings,
   ShieldCheck,
   Star,
+  Sparkles,
+  Loader2,
   Trash2,
   Users,
   Hash,
@@ -690,23 +692,25 @@ export function buildDiscoveryCards(
 
   const cards: DiscoveryCard[] = [];
   const installedKeys = new Set<string>();
+  const currentLocale = getCurrentLocale();
 
   for (const skill of installedByKey.values()) {
     const identity = discoveryCardIdentity(skill.key);
     installedKeys.add(identity);
     const catalogMatch = catalogByKey.get(identity) ?? null;
     const required = skill.catalogKind === "bundled" || catalogMatch?.kind === "bundled";
+    const translations = (skill.metadata as any)?.translations?.[currentLocale];
     cards.push({
       key: skill.key,
       skillId: skill.id,
       folderId: skill.folderId ?? null,
       catalogRef: catalogMatch ? catalogMatch.id : null,
-      name: skill.name,
+      name: translations?.name || skill.name,
       slug: skill.slug,
       author: skill.authorName ?? skill.sourceLabel ?? "you",
       version: discoveryVersionLabel(skill, required),
-      tagline: skill.tagline ?? null,
-      description: skill.description ?? null,
+      tagline: translations?.tagline || skill.tagline || null,
+      description: translations?.description || skill.description || null,
       categories: uniqueCategories([...(skill.categories ?? []), catalogMatch?.category]),
       iconUrl: skill.iconUrl,
       color: skill.color,
@@ -2940,6 +2944,40 @@ export function SkillDetailPage({
   studioHref?: string;
 }) {
   const { t } = useTranslation();
+  const currentLocale = getCurrentLocale();
+  const translations = (detail?.metadata as any)?.translations?.[currentLocale];
+  const hasTranslation = Boolean(translations?.markdown);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const queryClient = useQueryClient();
+  const { company } = useCompany();
+  const { pushToast } = useToastActions();
+
+  async function handleTranslateSkill(force = false) {
+    if (!company?.id || !detail?.id) return;
+    setTranslating(true);
+    try {
+      await companySkillsApi.translate(company.id, detail.id, {
+        targetLocale: currentLocale,
+        force,
+      });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.detail(company.id, detail.id) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.list(company.id) });
+      pushToast({
+        title: t("Habilidade traduzida com sucesso!"),
+        type: "success",
+      });
+      setShowOriginal(false);
+    } catch {
+      pushToast({
+        title: t("Falha ao traduzir habilidade"),
+        type: "error",
+      });
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   const [diffOpen, setDiffOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSharingScope, setSettingsSharingScope] = useState<Exclude<CompanySkillSharingScope, "public_link">>("company");
@@ -2992,14 +3030,21 @@ export function SkillDetailPage({
   }
 
   const skill = detail;
-  const resolvedStudioHref = studioHref ?? skillStudioRoute(skill.id);
+  const isTranslatedActive = hasTranslation && !showOriginal;
   const source = sourceMeta(skill.sourceBadge, skill.sourceLabel);
   const SourceIcon = source.icon;
-  const body = file?.markdown ? stripFrontmatter(file.content) : file?.content ?? "";
+  const displayName = isTranslatedActive && translations?.name ? translations.name : skill.name;
+  const displaySubtitle = isTranslatedActive && translations?.description ? translations.description : (resolveSkillSummaryText(skill) ?? source.label);
+  const rawBody = file?.markdown ? stripFrontmatter(file.content) : file?.content ?? "";
+  const displayBody = isTranslatedActive && (selectedPath === "SKILL.md" || selectedPath === "" || !file?.path || file?.path === "SKILL.md") && translations?.markdown
+    ? stripFrontmatter(translations.markdown)
+    : rawBody;
+  const resolvedStudioHref = studioHref ?? skillStudioRoute(skill.id);
+  const body = displayBody;
   const currentPin = shortRef(skill.sourceRef);
   const latestPin = shortRef(updateStatus?.latestRef);
   const selectedVersion = versions.find((version) => version.id === currentVersionSelection(skill)) ?? null;
-  const subtitleText = resolveSkillSummaryText(skill) ?? source.label;
+  const subtitleText = displaySubtitle;
   const settingsCategories = splitCategoryDraft(settingsCategoryDraft);
   const settingsCategoriesDirty = categorySetKey(settingsCategories) !== categorySetKey(skill.categories);
   const settingsSharingDirty = settingsSharingScope !== (skill.sharingScope === "public_link" ? "company" : skill.sharingScope);
@@ -3311,7 +3356,7 @@ export function SkillDetailPage({
               />
               <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-2">
-                  <h1 className="truncate text-2xl font-semibold">{detail.name}</h1>
+                  <h1 className="truncate text-2xl font-semibold">{displayName}</h1>
                   {/* Source icon sits right after the title; the tooltip names
                       where the skill was installed from (PAP-10907). */}
                   <Tooltip>
@@ -3366,6 +3411,43 @@ export function SkillDetailPage({
               "Installs" counts agents that currently have this skill attached
               (PAP-10907); stars and fork are interactive. */}
           <div className="flex flex-wrap items-center justify-end gap-1">
+            {currentLocale.toLowerCase().startsWith("pt") ? (
+              hasTranslation ? (
+                <div className="flex items-center gap-1 mr-1">
+                  <Button
+                    variant={showOriginal ? "outline" : "secondary"}
+                    size="sm"
+                    onClick={() => setShowOriginal(!showOriginal)}
+                    className="gap-1.5"
+                    title={showOriginal ? t("Ver tradução em Português gerada por IA") : t("Ver conteúdo original em inglês")}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <span>{showOriginal ? t("Ver tradução (IA)") : t("Traduzido (IA)")}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => void handleTranslateSkill(true)}
+                    disabled={translating}
+                    title={t("Atualizar tradução com IA")}
+                  >
+                    {translating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleTranslateSkill(false)}
+                  disabled={translating}
+                  className="gap-1.5 border-primary/30 hover:border-primary mr-1"
+                  title={t("Traduzir esta habilidade automaticamente para português com IA")}
+                >
+                  {translating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+                  <span>{translating ? t("Traduzindo...") : t("Traduzir com IA")}</span>
+                </Button>
+              )
+            ) : null}
             <Button variant="outline" size="sm" asChild>
               <Link to={resolvedStudioHref}>
                 <FlaskConical className="mr-1.5 h-3.5 w-3.5" />

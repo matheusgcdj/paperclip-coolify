@@ -224,6 +224,13 @@ export const companySkillUpdateSchema = z.object({
   sharingScope: companySkillSharingScopeSchema.optional(),
 }).default({});
 
+export const companySkillTranslateSchema = z.object({
+  targetLocale: z.string().min(2).max(10).optional().default("pt-BR"),
+  force: z.boolean().optional().default(false),
+});
+
+export type CompanySkillTranslateRequest = z.infer<typeof companySkillTranslateSchema>;
+
 export const companySkillUpdateStatusSchema = z.object({
   supported: z.boolean(),
   reason: z.string().nullable(),

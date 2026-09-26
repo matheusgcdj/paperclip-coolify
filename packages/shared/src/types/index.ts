@@ -162,6 +162,8 @@ export type {
   CompanySkillListItem,
   CompanySkillUsageAgent,
   CompanySkillDetail,
+  CompanySkillTranslation,
+  CompanySkillTranslations,
   CompanySkillListQuery,
   CompanySkillCategoryCount,
   CompanySkillVersion,

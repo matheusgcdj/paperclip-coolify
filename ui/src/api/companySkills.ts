@@ -255,4 +255,13 @@ export const companySkillsApi = {
       `/companies/${encodeURIComponent(companyId)}/skills/install-catalog`,
       payload,
     ),
+  translate: (
+    companyId: string,
+    skillId: string,
+    payload: { targetLocale?: string; force?: boolean } = {},
+  ) =>
+    api.post<{ skill: CompanySkill; translation: any; cached: boolean }>(
+      `/companies/${encodeURIComponent(companyId)}/skills/${encodeURIComponent(skillId)}/translate`,
+      payload,
+    ),
 };
