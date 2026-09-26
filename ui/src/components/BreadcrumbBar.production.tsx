@@ -1,6 +1,6 @@
 import { Link } from "@/lib/router";
 import { Menu } from "lucide-react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useSidebar } from "../context/SidebarContext";
 import { useCompany } from "../context/CompanyContext";

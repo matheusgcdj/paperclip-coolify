@@ -28,7 +28,7 @@ import { PageTabBar } from "../components/PageTabBar";
 import { InlineEntitySelector, type InlineEntityOption } from "../components/InlineEntitySelector";
 import { MarkdownEditor, type MarkdownEditorRef, type MentionOption } from "../components/MarkdownEditor";
 import { RoutineListRow, nextRoutineStatus } from "../components/RoutineList";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   RoutineRunVariablesDialog,
   type RoutineRunDialogSubmitData,

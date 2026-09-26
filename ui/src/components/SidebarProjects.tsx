@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PluginSlotMount, usePluginSlots } from "@/plugins/slots";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   getProjectSortModeStorageKey,
   PROJECT_SORT_MODE_UPDATED_EVENT,

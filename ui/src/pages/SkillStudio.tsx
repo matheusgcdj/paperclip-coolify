@@ -47,7 +47,7 @@ import {
   type SearchableSelectOption,
 } from "@/components/SearchableSelect";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useCompany } from "../context/CompanyContext";
 import { useOptionalToastActions } from "../context/ToastContext";
 import { classifySkillDenial } from "@/lib/skill-policy-denial";

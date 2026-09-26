@@ -15,7 +15,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { ArtifactCard } from "../components/artifacts/ArtifactCard";
 import { ArtifactGroupCard } from "../components/artifacts/ArtifactGroupCard";
 import { useSearchParams, Link } from "@/lib/router";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
   AlertTriangle,

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Lock, type LucideIcon } from "lucide-react";
 import { Link } from "@/lib/router";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SkillCardIcon, type SkillIconCard } from "../../components/SkillCardIcon";

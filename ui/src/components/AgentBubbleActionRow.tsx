@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Check, Copy, MoreHorizontal, ThumbsDown, ThumbsUp, X } from "lucide-react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 

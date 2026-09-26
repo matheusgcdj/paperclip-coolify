@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { FolderSwatch, type FolderSelection } from "./FolderControls";
 import {
   buildSkillFolderTree,

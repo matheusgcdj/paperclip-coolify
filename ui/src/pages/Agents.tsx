@@ -28,7 +28,7 @@ import { PageTabBar } from "../components/PageTabBar";
 import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Bot, Plus, List, Network } from "lucide-react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { AGENT_ROLE_LABELS, type Agent, type Environment, type EnvironmentCapabilities } from "@paperclipai/shared";
 import {
   isStarred,

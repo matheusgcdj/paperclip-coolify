@@ -13,7 +13,7 @@ import { ShieldCheck } from "lucide-react";
 import { ApprovalCard } from "../components/ApprovalCard";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { Badge } from "@/components/ui/badge";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 type StatusFilter = "pending" | "all";
 

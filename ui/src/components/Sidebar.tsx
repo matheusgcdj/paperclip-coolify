@@ -23,7 +23,7 @@ import {
   Users,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { SidebarSection } from "./SidebarSection";
 import { SidebarNavItem } from "./SidebarNavItem";

@@ -1,7 +1,7 @@
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

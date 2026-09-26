@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ListFilter, Layers, ChevronDown, ChevronRight, User, Settings } from "lucide-react";
 import { timeAgo } from "../lib/timeAgo";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Event Tier Classification                                          */

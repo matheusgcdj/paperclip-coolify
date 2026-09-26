@@ -38,7 +38,7 @@ import {
 import { collectLiveIssueIds, collectSubtreeLiveCounts } from "../lib/liveIssueIds";
 import { formatAssigneeUserLabel } from "../lib/assignees";
 import { buildCompanyUserLabelMap, buildCompanyUserProfileMap } from "../lib/company-members";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   armIssueDetailInboxQuickArchive,
   createIssueDetailLocationState,

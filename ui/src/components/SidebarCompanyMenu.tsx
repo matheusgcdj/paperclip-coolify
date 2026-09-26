@@ -44,7 +44,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { cn, SIDEBAR_RAIL_HIDDEN_LABEL } from "@/lib/utils";
 import { useSidebar } from "../context/SidebarContext";
 import { CompanyPatternIcon } from "./CompanyPatternIcon";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 import { PluginOrganizationSwitcher } from "./PluginOrganizationSwitcher";
 

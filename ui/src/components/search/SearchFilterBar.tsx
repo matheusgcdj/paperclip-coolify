@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { User, UserX } from "lucide-react";
 import {
   COMPANY_SEARCH_UPDATED_WITHIN_OPTIONS,

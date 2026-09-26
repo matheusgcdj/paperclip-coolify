@@ -56,7 +56,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useHiddenSettings } from "../hooks/useHiddenSettings";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToastActions } from "../context/ToastContext";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   secretsApi,
   type CreateSecretInput,

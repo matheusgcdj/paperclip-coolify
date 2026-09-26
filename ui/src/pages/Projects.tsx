@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ArrowUpDown, Check, Hexagon, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 type ProjectSortField = "name" | "updated" | "created" | "targetDate";
 type ProjectSortDir = "asc" | "desc";

@@ -13,7 +13,7 @@ import { SIDEBAR_SCROLL_RESET_STATE } from "../lib/navigation-scroll";
 import { cn } from "../lib/utils";
 import { useInboxBadge } from "../hooks/useInboxBadge";
 import { Badge } from "@/components/ui/badge";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 interface MobileBottomNavProps {
   visible: boolean;

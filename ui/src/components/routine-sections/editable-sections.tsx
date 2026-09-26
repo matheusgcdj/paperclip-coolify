@@ -1,6 +1,6 @@
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { useMemo, useState } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   ArrowRight,
   Braces,

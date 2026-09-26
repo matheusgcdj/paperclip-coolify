@@ -1,5 +1,5 @@
 import { Check, Globe } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { t, useTranslation } from "react-i18next";
 import { setLocale, getCurrentLocale } from "../i18n";
 import { AVAILABLE_LOCALES, type LocaleInfo } from "../i18n/locales";
 import { cn } from "../lib/utils";

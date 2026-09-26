@@ -1,7 +1,7 @@
 import { ChevronsUpDown, Plus, RefreshCw, Settings } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useCompany } from "../context/CompanyContext";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,

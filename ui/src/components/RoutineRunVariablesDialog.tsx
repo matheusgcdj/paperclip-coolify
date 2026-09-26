@@ -1,7 +1,7 @@
 import { useWorkspaceIsolationControls } from "@/hooks/useWorkspaceIsolationControls";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   WORKSPACE_BRANCH_ROUTINE_VARIABLE,
   type Agent,

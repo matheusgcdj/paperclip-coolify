@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 export interface MemberMultiSelectOption {
   userId: string;

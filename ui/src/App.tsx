@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import type { ToolConnectionCredentialSource } from "@paperclipai/shared";
 import { Navigate, Outlet, Route, Routes, useActiveCompanyPrefix, useLocation, useParams } from "@/lib/router";
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { Layout } from "./components/Layout";
 import { Layout as ProductionLayout } from "./components/Layout.production";
 import { ConferenceRoomChatGate } from "./components/ConferenceRoomChatGate";

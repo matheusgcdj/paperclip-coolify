@@ -5,7 +5,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useDialogActions } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { GoalTree } from "../components/GoalTree";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";

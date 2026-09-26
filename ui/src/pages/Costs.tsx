@@ -33,7 +33,7 @@ import { billingTypeDisplayName, cn, formatCents, formatTokens, providerDisplayN
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 const NO_COMPANY = "__none__";
 export type CostsMainTab = "overview" | "budgets" | "providers" | "billers" | "finance";

@@ -1,7 +1,7 @@
 import { AgentIdentity } from "@/components/AgentIdentity";
 import { startTransition, useDeferredValue, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useVisibilityRefetchInterval } from "@/lib/polling";
 import { accessApi } from "../api/access";

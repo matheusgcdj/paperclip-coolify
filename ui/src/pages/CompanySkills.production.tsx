@@ -28,7 +28,7 @@ import { foldersApi } from "../api/folders";
 import { agentsApi } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs, type Breadcrumb } from "../context/BreadcrumbContext";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useToastActions } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { copyTextToClipboard } from "../lib/clipboard";

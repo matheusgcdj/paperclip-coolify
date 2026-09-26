@@ -6,7 +6,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 /**
  * Forces the full-label (non-rail) presentation for any `SidebarNavItem`

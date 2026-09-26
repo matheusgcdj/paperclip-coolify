@@ -1,5 +1,5 @@
 import { healthApi } from "@/api/health";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { LocalProviderLoginInstructions } from "./AdapterLoginChrome";
 import { useLocalAiLogin } from "./ai-connections/useLocalAiLogin";
 import { aiConnectionsApi } from "@/api/ai-connections";

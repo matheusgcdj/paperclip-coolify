@@ -1,7 +1,7 @@
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "@/lib/router";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MoreHorizontal,

@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { SidebarSection } from "./SidebarSection";
 import { SidebarNavItem } from "./SidebarNavItem";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 const RECENT_TASK_MENU_ITEM_CLASS =
   "h-(--profile-popover-row-height) gap-(--profile-popover-row-gap) rounded-lg px-2.5 py-0 text-(length:--text-compact) font-medium leading-(--profile-popover-label-line-height) focus:bg-accent/50 focus:text-foreground";

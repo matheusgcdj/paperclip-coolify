@@ -28,7 +28,7 @@ import {
 } from "../adapters/use-disabled-adapters";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useToastActions } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { EmptyState } from "../components/EmptyState";

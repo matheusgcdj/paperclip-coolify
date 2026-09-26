@@ -1,6 +1,6 @@
 import { Compass, Library, PencilRuler } from "lucide-react";
 import { useLocation } from "@/lib/router";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import {
   resolveSkillsNavigationView,
   SKILLS_NAVIGATION_HREFS,

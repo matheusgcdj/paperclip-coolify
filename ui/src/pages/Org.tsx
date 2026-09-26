@@ -11,7 +11,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { ChevronRight, GitBranch } from "lucide-react";
 import { cn } from "../lib/utils";
 import { agentStatusDot, agentStatusDotDefault } from "../lib/status-colors";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 function OrgTree({
   nodes,

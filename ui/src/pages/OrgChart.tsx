@@ -15,7 +15,7 @@ import { Download, Maximize2, Minus, Network, Plus, Upload } from "lucide-react"
 import { AGENT_ROLE_LABELS, type Agent } from "@paperclipai/shared";
 import { useCloudInstance } from "@/hooks/useCloudInstance";
 import { useHiddenSettings } from "@/hooks/useHiddenSettings";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 // Layout constants
 const CARD_W = 200;

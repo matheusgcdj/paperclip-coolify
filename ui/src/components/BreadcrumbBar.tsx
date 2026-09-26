@@ -17,7 +17,7 @@ import { Fragment, useMemo, type ReactNode } from "react";
 import { PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { PluginLauncherOutlet, usePluginLaunchers } from "@/plugins/launchers";
 import { cn } from "../lib/utils";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 type GlobalToolbarContext = { companyId: string | null; companyPrefix: string | null };
 

@@ -48,7 +48,7 @@ import type {
   AgentInstructionsFileSummary,
   HeartbeatRun,
 } from "@paperclipai/shared";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 export function RunButton({
   onClick,

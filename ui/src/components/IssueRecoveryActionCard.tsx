@@ -1,7 +1,7 @@
 import { useWorkspaceIsolationControls } from "@/hooks/useWorkspaceIsolationControls";
 import { requiresExecutionReconciliation } from "@paperclipai/shared";
 import { useMemo, useState } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import type {
   Agent,
   GitWorktreeBranchAncestryVerdict,

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useSidebarNavExpanded } from "./SidebarNavItem";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 type SidebarSectionIcon = ComponentType<{ className?: string }>;
 

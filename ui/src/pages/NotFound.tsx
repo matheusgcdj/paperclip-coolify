@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 type NotFoundScope = "board" | "invalid_company_prefix" | "global";
 

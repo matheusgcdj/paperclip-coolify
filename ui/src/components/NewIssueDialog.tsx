@@ -2,7 +2,7 @@ import { useWorkspaceIsolationControls } from "@/hooks/useWorkspaceIsolationCont
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { normalizeLegacyRunnerProvider } from "@paperclipai/adapter-utils";
 import { memo, useState, useEffect, useRef, useCallback, useMemo, type ChangeEvent, type CSSProperties, type DragEvent, type RefObject } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AgentEnvConfig, EnvBinding, IssueWorkMode } from "@paperclipai/shared";
 import { useDialog } from "../context/DialogContext";

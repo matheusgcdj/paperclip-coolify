@@ -3,7 +3,7 @@ import { Clock3, FileDiff, GitCommit, type LucideIcon } from "lucide-react";
 import { healthApi, type HealthStatus } from "@/api/health";
 import { instanceSettingsApi } from "@/api/instanceSettings";
 import { queryKeys } from "@/lib/queryKeys";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 
 function formatTimestamp(value: string | null | undefined, t: (key: string) => string): string {
   if (!value) return t("Unavailable");

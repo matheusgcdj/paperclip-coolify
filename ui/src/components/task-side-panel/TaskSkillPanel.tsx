@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, FileText, Loader2, Wrench } from "lucide-react";
 import { companySkillsApi } from "@/api/companySkills";
 import { ApiError } from "@/api/client";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { MarkdownBody } from "@/components/MarkdownBody";
 import { Button } from "@/components/ui/button";
 import { queryKeys } from "@/lib/queryKeys";

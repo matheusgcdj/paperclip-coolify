@@ -8,7 +8,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { useTranslation } from "@/i18n";
+import { t, useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { useComposerStop } from "@/hooks/useComposerStop";
 import { useStreamlinedTaskChatPresentation } from "./presentation-mode";
