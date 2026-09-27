@@ -31,6 +31,8 @@ import { appCopyFor } from "@/lib/app-gallery-copy";
 import { useCompany } from "@/context/CompanyContext";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useToast } from "@/context/ToastContext";
+import { useTranslation, getCurrentLocale } from "@/i18n";
+import { translateText } from "@/i18n/auto-translate";
 import { queryKeys } from "@/lib/queryKeys";
 import { toolsApi } from "@/api/tools";
 import {
@@ -775,11 +777,20 @@ export function ConnectorCard({
   preselectedAgentId?: string | null;
   chatConnectorsEnabled: boolean;
 }) {
+  const { t } = useTranslation();
+  const title = t(row.name);
+  const localizedDescription = useMemo(() => {
+    const direct = t(row.description);
+    if (direct !== row.description) return direct;
+    return translateText(row.description, getCurrentLocale()) ?? row.description;
+  }, [row.description, t]);
+
   const action = connectorAction(
     row,
     chatConnectorsEnabled,
     preselectedAgentId,
   );
+  const actionLabel = t(action.label);
   return (
     <div
       role="listitem"
@@ -800,9 +811,9 @@ export function ConnectorCard({
           size={36}
         />
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-foreground">{row.name}</h2>
+          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {row.description}
+            {localizedDescription}
           </p>
         </div>
         <Button
@@ -810,13 +821,13 @@ export function ConnectorCard({
           size="sm"
           variant="outline"
           disabled={!action.href}
-          title={action.title}
+          title={action.title ? t(action.title) : undefined}
           onClick={() => {
             if (action.href) onNavigate(action.href);
           }}
-          aria-label={`${action.label} ${row.name}`}
+          aria-label={`${actionLabel} ${title}`}
         >
-          {action.label}
+          {actionLabel}
         </Button>
       </div>
 

@@ -13,6 +13,7 @@ import { StatusGlyph } from "./StatusGlyph";
 import { RunChatSurface } from "./RunChatSurface";
 import { useLiveRunTranscripts } from "./transcript/useLiveRunTranscripts";
 import { usePublishSharedQueryData, useSharedPollingQuery } from "../hooks/useSharedPolling";
+import { useTranslation } from "@/i18n";
 
 const MIN_DASHBOARD_RUNS = 4;
 const DASHBOARD_RUN_CARD_LIMIT = 4;
@@ -59,6 +60,7 @@ export function ActiveAgentsPanel({
   showMoreLink = true,
   showTranscripts = false,
 }: ActiveAgentsPanelProps) {
+  const { t } = useTranslation();
   const liveRunsQueryKey = [...queryKeys.liveRuns(companyId), queryScope, { minRunCount, fetchLimit }] as const;
   const sharedLiveRuns = useSharedPollingQuery({
     companyId,
@@ -112,11 +114,11 @@ export function ActiveAgentsPanel({
   return (
     <div>
       <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
+        {t(title)}
       </h3>
       {runs.length === 0 ? (
         <div className="rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          <p className="text-sm text-muted-foreground">{t(emptyMessage)}</p>
         </div>
       ) : (
         <div className={cn("grid grid-cols-1 items-start gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4", gridClassName)}>

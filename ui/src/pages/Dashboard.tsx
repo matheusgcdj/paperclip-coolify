@@ -38,6 +38,7 @@ import { InlineBanner } from "../components/InlineBanner";
 import type { Agent, Issue } from "@paperclipai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { SmokeLabDashboardCard } from "../components/SmokeLabDashboardCard";
+import { useTranslation } from "@/i18n";
 
 const DASHBOARD_ACTIVITY_LIMIT = 10;
 
@@ -71,6 +72,7 @@ export function derivePausedAgentBanner(agents: Agent[] | undefined): PausedAgen
 }
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const { selectedCompanyId, companies } = useCompany();
   const { openOnboarding } = useDialogActions();
   const location = useLocation();
@@ -384,15 +386,15 @@ export function Dashboard() {
                 <PauseCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-700 dark:text-red-300" />
                 <div>
                   <p className="text-sm font-medium text-red-950 dark:text-red-50">
-                    {data.budgets.activeIncidents} active budget incident{data.budgets.activeIncidents === 1 ? "" : "s"}
+                    {data.budgets.activeIncidents} {t("active budget incident")}{data.budgets.activeIncidents === 1 ? "" : "s"}
                   </p>
                   <p className="text-xs text-red-900/70 dark:text-red-100/70">
-                    {data.budgets.pausedAgents} agents paused · {data.budgets.pausedProjects} projects paused · {data.budgets.pendingApprovals} pending budget approvals
+                    {data.budgets.pausedAgents} {t("agents paused")} · {data.budgets.pausedProjects} {t("projects paused")} · {data.budgets.pendingApprovals} {t("pending budget approvals")}
                   </p>
                 </div>
               </div>
               <Link to="/costs" className="text-sm underline underline-offset-2 text-red-900 dark:text-red-100">
-                Open budgets
+                {t("Open budgets")}
               </Link>
             </div>
           ) : null}
@@ -401,51 +403,51 @@ export function Dashboard() {
             <MetricCard
               icon={Bot}
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
-              label="Agents Enabled"
+              label={t("Agents Enabled")}
               to="/agents"
               description={
                 <span>
-                  {data.agents.running} running{", "}
-                  {data.agents.paused} paused{", "}
-                  {data.agents.error} errors
+                  {data.agents.running} {t("running")}{", "}
+                  {data.agents.paused} {t("paused")}{", "}
+                  {data.agents.error} {t("errors")}
                 </span>
               }
             />
             <MetricCard
               icon={CircleDot}
               value={data.tasks.inProgress}
-              label="Tasks In Progress"
+              label={t("Tasks In Progress")}
               to="/issues"
               description={
                 <span>
-                  {data.tasks.open} open{", "}
-                  {data.tasks.blocked} blocked
+                  {data.tasks.open} {t("open")}{", "}
+                  {data.tasks.blocked} {t("blocked")}
                 </span>
               }
             />
             <MetricCard
               icon={DollarSign}
               value={formatCents(data.costs.monthSpendCents)}
-              label="Month Spend"
+              label={t("Month Spend")}
               to="/costs"
               description={
                 <span>
                   {data.costs.monthBudgetCents > 0
-                    ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
-                    : "Unlimited budget"}
+                    ? `${data.costs.monthUtilizationPercent}% de ${formatCents(data.costs.monthBudgetCents)} ${t("budget")}`
+                    : t("Unlimited budget")}
                 </span>
               }
             />
             <MetricCard
               icon={ShieldCheck}
               value={data.pendingApprovals + data.budgets.pendingApprovals}
-              label="Pending Approvals"
+              label={t("Pending Approvals")}
               to="/approvals"
               description={
                 <span>
                   {data.budgets.pendingApprovals > 0
-                    ? `${data.budgets.pendingApprovals} budget overrides awaiting board review`
-                    : "Awaiting board review"}
+                    ? `${data.budgets.pendingApprovals} ${t("budget overrides awaiting board review")}`
+                    : t("Awaiting board review")}
                 </span>
               }
             />
@@ -484,7 +486,7 @@ export function Dashboard() {
             {recentActivity.length > 0 && (
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Recent Activity
+                  {t("Recent Activity")}
                 </h3>
                 <Card className="@container block py-0 divide-y divide-border overflow-hidden">
                   {recentActivity.map((event) => (
@@ -505,11 +507,11 @@ export function Dashboard() {
             {/* Recent Tasks */}
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Recent Tasks
+                {t("Recent Tasks")}
               </h3>
               {recentIssues.length === 0 ? (
                 <Card className="block p-4">
-                  <p className="text-sm text-muted-foreground">No tasks yet.</p>
+                  <p className="text-sm text-muted-foreground">{t("No tasks yet.")}</p>
                 </Card>
               ) : (
                 <Card className="@container block py-0 divide-y divide-border overflow-hidden">
