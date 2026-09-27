@@ -50,9 +50,9 @@ instance_dir="${home_dir}/instances/${PAPERCLIP_INSTANCE_ID:-default}"
 config_file="${instance_dir}/config.json"
 if [ ! -f "$config_file" ]; then
     mkdir -p "$instance_dir"
-    cat << 'EOF' > "$config_file"
+    cat << EOF > "$config_file"
 {
-  "$meta": {
+  "\$meta": {
     "version": 1,
     "updatedAt": "2026-09-24T00:00:00.000Z",
     "source": "configure"
