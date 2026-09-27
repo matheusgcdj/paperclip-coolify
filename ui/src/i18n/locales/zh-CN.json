@@ -1305,5 +1305,13 @@
     "forbidden": "You don't have permission to do that.",
     "notFound": "Not found",
     "validationError": "Please check your input and try again."
-  }
+  },
+  "Introducing Connectors": "连接器功能介绍",
+  "New in Paperclip": "Paperclip 新功能",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "通过开箱即用的集成，将外部工具和服务直接连接到您的智能体。",
+  "Explore Connectors": "探索连接器",
+  "Read the announcement": "阅读公告",
+  "Connectors illustration": "连接器插图",
+  "Dismiss announcement": "关闭公告",
+  "Connectors": "连接器"
 }

@@ -1305,5 +1305,13 @@
     "forbidden": "You don't have permission to do that.",
     "notFound": "Not found",
     "validationError": "Please check your input and try again."
-  }
+  },
+  "Introducing Connectors": "Einführung von Konnektoren",
+  "New in Paperclip": "Neu in Paperclip",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "Verbinden Sie externe Tools und Dienste direkt mit Ihren Agenten über sofort einsatzbereite Integrationen.",
+  "Explore Connectors": "Konnektoren erkunden",
+  "Read the announcement": "Ankündigung lesen",
+  "Connectors illustration": "Konnektoren-Illustration",
+  "Dismiss announcement": "Ankündigung schließen",
+  "Connectors": "Konnektoren"
 }

@@ -10,6 +10,7 @@ import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
 import { PaperclipLoading } from "@/components/AnimatedPaperclipIcon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PaperclipLockup } from "../components/PaperclipLockup";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 type AuthMode = "sign_in" | "sign_up";
 
@@ -65,7 +66,7 @@ export function AuthPage() {
       navigate(nextPath, { replace: true });
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : "Authentication failed");
+      setError(t(err instanceof Error ? err.message : "Authentication failed"));
     },
   });
 
@@ -84,7 +85,8 @@ export function AuthPage() {
 
   return (
     <div className="fixed inset-0 flex bg-background">
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <LanguageSelector variant="select" />
         <ThemeToggle />
       </div>
       {/* Left half — form */}

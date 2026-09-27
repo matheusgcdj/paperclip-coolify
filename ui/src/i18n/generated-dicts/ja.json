@@ -49,7 +49,7 @@
   "Workspaces": "Workspaces",
   "Organization": "Organization",
   "Org": "Org",
-  "Connectors": "Connectors",
+  "Connectors": "コネクタ",
   "Timeline": "Timeline",
   "Audit": "Audit",
   "New Task": "New Task",
@@ -1953,7 +1953,7 @@
   "Dismiss Release questions": "リリースの質問を無視する",
   "Dismiss Review the proposed plan": "却下 提案された計画を検討します",
   "Dismiss agent membership notice": "エージェントメンバーシップ通知を閉じる",
-  "Dismiss announcement": "アナウンスを却下する",
+  "Dismiss announcement": "お知らせを閉じる",
   "Dismiss delivery receipt": "配送受領書を無視する",
   "Dismiss fixture": "フィクスチャを閉じる",
   "Dismiss folder suggestion": "フォルダーの提案を無視する",
@@ -25321,5 +25321,11 @@
   "Paperclip bundled": "Paperclip bundled",
   "Paperclip workspace": "Paperclip workspace",
   "More actions for": "More actions for",
-  "by": "by"
+  "by": "by",
+  "Introducing Connectors": "コネクタのご紹介",
+  "New in Paperclip": "Paperclip の新機能",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "すぐに使える統合機能により、外部ツールやサービスをエージェントに直接接続します。",
+  "Explore Connectors": "コネクタを探索",
+  "Read the announcement": "発表を読む",
+  "Connectors illustration": "コネクタのイラスト"
 }

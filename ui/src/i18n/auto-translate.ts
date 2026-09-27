@@ -77,6 +77,11 @@ const PATTERNS_PT: [RegExp, string][] = [
   [/^step\s+(\d+)\s+of\s+(\d+)$/i, "Passo $1 de $2"],
   [/^search\s+([a-zA-Z0-9_\s]+)\.\.\.$/i, "Buscar $1..."],
   [/^filter\s+by\s+([a-zA-Z0-9_\s]+)$/i, "Filtrar por $1"],
+  [/^introducing\s+(.+)$/i, "Apresentando $1"],
+  [/^explore\s+(.+)$/i, "Explorar $1"],
+  [/^new\s+in\s+paperclip$/i, "Novidade no Paperclip"],
+  [/^read\s+(?:the\s+)?announcement$/i, "Ler o comunicado"],
+  [/^dismiss\s+announcement$/i, "Fechar anúncio"],
 ];
 
 const originalTextNodes = new WeakMap<Node, string>();

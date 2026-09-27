@@ -1305,5 +1305,13 @@
     "forbidden": "You don't have permission to do that.",
     "notFound": "Not found",
     "validationError": "Please check your input and try again."
-  }
+  },
+  "Introducing Connectors": "コネクタのご紹介",
+  "New in Paperclip": "Paperclip の新機能",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "すぐに使える統合機能により、外部ツールやサービスをエージェントに直接接続します。",
+  "Explore Connectors": "コネクタを探索",
+  "Read the announcement": "発表を読む",
+  "Connectors illustration": "コネクタのイラスト",
+  "Dismiss announcement": "お知らせを閉じる",
+  "Connectors": "コネクタ"
 }

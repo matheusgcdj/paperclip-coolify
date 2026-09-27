@@ -49,7 +49,7 @@
   "Workspaces": "Workspaces",
   "Organization": "Organization",
   "Org": "Org",
-  "Connectors": "Connectors",
+  "Connectors": "连接器",
   "Timeline": "Timeline",
   "Audit": "Audit",
   "New Task": "New Task",
@@ -1923,7 +1923,7 @@
   "Dismiss Release questions": "驳回发布问题",
   "Dismiss Review the proposed plan": "驳回 审查拟议计划",
   "Dismiss agent membership notice": "解除代理会员资格通知",
-  "Dismiss announcement": "驳回公告",
+  "Dismiss announcement": "关闭公告",
   "Dismiss delivery receipt": "驳回交货收据",
   "Dismiss fixture": "解散夹具",
   "Dismiss folder suggestion": "拒绝文件夹建议",
@@ -25321,5 +25321,11 @@
   "Paperclip bundled": "Paperclip bundled",
   "Paperclip workspace": "Paperclip workspace",
   "More actions for": "More actions for",
-  "by": "by"
+  "by": "by",
+  "Introducing Connectors": "连接器功能介绍",
+  "New in Paperclip": "Paperclip 新功能",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "通过开箱即用的集成，将外部工具和服务直接连接到您的智能体。",
+  "Explore Connectors": "探索连接器",
+  "Read the announcement": "阅读公告",
+  "Connectors illustration": "连接器插图"
 }

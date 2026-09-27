@@ -49,7 +49,7 @@
   "Workspaces": "Workspaces",
   "Organization": "Organization",
   "Org": "Org",
-  "Connectors": "Connectors",
+  "Connectors": "Connettori",
   "Timeline": "Timeline",
   "Audit": "Audit",
   "New Task": "New Task",
@@ -1953,7 +1953,7 @@
   "Dismiss Release questions": "Ignora domande sulla versione",
   "Dismiss Review the proposed plan": "Ignora Esamina il piano proposto",
   "Dismiss agent membership notice": "Ignorare l'avviso di adesione dell'agente",
-  "Dismiss announcement": "Ignora l'annuncio",
+  "Dismiss announcement": "Chiudi annuncio",
   "Dismiss delivery receipt": "Ignorare la ricevuta di consegna",
   "Dismiss fixture": "Ignora dispositivo",
   "Dismiss folder suggestion": "Ignora il suggerimento sulla cartella",
@@ -25321,5 +25321,11 @@
   "Paperclip bundled": "Paperclip bundled",
   "Paperclip workspace": "Paperclip workspace",
   "More actions for": "More actions for",
-  "by": "by"
+  "by": "by",
+  "Introducing Connectors": "Presentazione dei connettori",
+  "New in Paperclip": "Novità in Paperclip",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "Collega strumenti e servizi esterni direttamente ai tuoi agenti con integrazioni pronte all'uso.",
+  "Explore Connectors": "Esplora i connettori",
+  "Read the announcement": "Leggi l'annuncio",
+  "Connectors illustration": "Illustrazione dei connettori"
 }

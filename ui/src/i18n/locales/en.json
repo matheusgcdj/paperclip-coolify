@@ -175,10 +175,8 @@
     "onHold": "On Hold",
     "cancelled": "Cancelled",
     "failed": "Failed",
-    "success": "Success",
     "retry": "Retry",
     "ignore": "Ignore",
-    "skip": "Skip",
     "abort": "Abort",
     "pause": "Pause",
     "resume": "Resume",
@@ -1307,5 +1305,13 @@
     "forbidden": "You don't have permission to do that.",
     "notFound": "Not found",
     "validationError": "Please check your input and try again."
-  }
+  },
+  "Introducing Connectors": "Introducing Connectors",
+  "New in Paperclip": "New in Paperclip",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "Connect external tools and services directly to your agents with out-of-the-box integrations.",
+  "Explore Connectors": "Explore Connectors",
+  "Read the announcement": "Read the announcement",
+  "Connectors illustration": "Connectors illustration",
+  "Dismiss announcement": "Dismiss announcement",
+  "Connectors": "Connectors"
 }

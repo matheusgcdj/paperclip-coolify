@@ -1953,7 +1953,7 @@
   "Dismiss Release questions": "Dismiss Release questions",
   "Dismiss Review the proposed plan": "Dismiss Review the proposed plan",
   "Dismiss agent membership notice": "Dismiss agent membership notice",
-  "Dismiss announcement": "Dismiss announcement",
+  "Dismiss announcement": "Ignorer l'annonce",
   "Dismiss delivery receipt": "Dismiss delivery receipt",
   "Dismiss fixture": "Dismiss fixture",
   "Dismiss folder suggestion": "Dismiss folder suggestion",
@@ -25321,5 +25321,11 @@
   "Paperclip bundled": "Paperclip bundled",
   "Paperclip workspace": "Paperclip workspace",
   "More actions for": "More actions for",
-  "by": "by"
+  "by": "by",
+  "Introducing Connectors": "Présentation des connecteurs",
+  "New in Paperclip": "Nouveau dans Paperclip",
+  "Connect external tools and services directly to your agents with out-of-the-box integrations.": "Connectez des outils et services externes directement à vos agents grâce à des intégrations prêtes à l'emploi.",
+  "Explore Connectors": "Explorer les connecteurs",
+  "Read the announcement": "Lire l'annonce",
+  "Connectors illustration": "Illustration des connecteurs"
 }
