@@ -1,5 +1,6 @@
 import https from "node:https";
-import type { Db } from "@paperclipai/db";
+import { companySkills, type Db } from "@paperclipai/db";
+import { eq, and } from "drizzle-orm";
 import { companySkillService } from "./company-skills.js";
 import { logger } from "../middleware/logger.js";
 
@@ -314,9 +315,13 @@ export async function translateAndSaveSkill(
     translatedAt: new Date().toISOString(),
   };
 
-  const updatedSkill = await svc.updateSkillMetadata(skill, {
-    translations: currentTranslations,
-  });
+  await db
+    .update(companySkills)
+    .set({
+      metadata: { ...skill.metadata, translations: currentTranslations },
+      updatedAt: new Date(),
+    })
+    .where(and(eq(companySkills.id, skillId), eq(companySkills.companyId, companyId)));
 
   logger.info(
     { companyId, skillId, targetLocale },
@@ -324,7 +329,7 @@ export async function translateAndSaveSkill(
   );
 
   return {
-    skill: updatedSkill,
+    skill: skill,
     translation: currentTranslations[targetLocale],
   };
 }
