@@ -699,7 +699,7 @@ export function buildDiscoveryCards(
     installedKeys.add(identity);
     const catalogMatch = catalogByKey.get(identity) ?? null;
     const required = skill.catalogKind === "bundled" || catalogMatch?.kind === "bundled";
-    const translations = (skill.metadata as any)?.translations?.[currentLocale];
+    const translations = ((skill as any).metadata)?.translations?.[currentLocale];
     cards.push({
       key: skill.key,
       skillId: skill.id,
@@ -2950,7 +2950,7 @@ export function SkillDetailPage({
   const [showOriginal, setShowOriginal] = useState(false);
   const [translating, setTranslating] = useState(false);
   const queryClient = useQueryClient();
-  const { company } = useCompany();
+  const { selectedCompany: company } = useCompany();
   const { pushToast } = useToastActions();
 
   async function handleTranslateSkill(force = false) {
@@ -2965,13 +2965,13 @@ export function SkillDetailPage({
       await queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.list(company.id) });
       pushToast({
         title: t("Habilidade traduzida com sucesso!"),
-        type: "success",
+        tone: "success",
       });
       setShowOriginal(false);
     } catch {
       pushToast({
         title: t("Falha ao traduzir habilidade"),
-        type: "error",
+        tone: "error",
       });
     } finally {
       setTranslating(false);

@@ -216,7 +216,7 @@ export function CompanySettings() {
         setSelectedCompanyId(remainingCompanies[0].id);
         navigate(`/${remainingCompanies[0].issuePrefix}/dashboard`, { replace: true });
       } else {
-        setSelectedCompanyId(null);
+        //
         navigate("/companies", { replace: true });
       }
     },
