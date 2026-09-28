@@ -1,0 +1,94 @@
+name: Sync upstream
+
+on:
+  schedule:
+    # Executa a cada 6 horas
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/paperclipai/paperclip.git || true
+          git fetch upstream master
+
+      - name: Check for new commits
+        id: check
+        run: |
+          AHEAD=$(git rev-list --count HEAD..upstream/master)
+          echo "new_commits=$AHEAD" >> "$GITHUB_OUTPUT"
+          echo "Upstream has $AHEAD new commit(s)"
+
+      - name: Merge upstream
+        if: steps.check.outputs.new_commits != '0'
+        run: |
+          # Tenta merge automático preservando nossas customizações i18n
+          if git merge upstream/master --no-edit; then
+            echo "✅ Merge automático sem conflitos"
+          else
+            echo "⚠️ Conflitos detectados — tentando resolução automática"
+            
+            # Para cada arquivo em conflito, tenta resolver preservando nosso lado
+            # em arquivos de i18n/tradução e aceitando upstream no resto
+            CONFLICTED=$(git diff --name-only --diff-filter=U)
+            RESOLVED=true
+            
+            for file in $CONFLICTED; do
+              case "$file" in
+                ui/src/i18n/*|ui/src/i18n/generated-dicts/*)
+                  # Arquivos de internacionalização: manter nosso lado
+                  git checkout --ours "$file"
+                  git add "$file"
+                  echo "  → $file: mantido nosso (i18n)"
+                  ;;
+                .github/workflows/docker.yml|.github/workflows/sync-upstream.yml|scripts/docker-entrypoint.sh|README.pt-BR.md)
+                  # Arquivos de deploy/customização: manter nosso lado
+                  git checkout --ours "$file"
+                  git add "$file"
+                  echo "  → $file: mantido nosso (deploy/custom)"
+                  ;;
+                *)
+                  # Outros arquivos: tentar aceitar upstream e re-aplicar i18n depois
+                  # Se o conflito for apenas em wrappers t(), tenta combinação
+                  if git checkout --theirs "$file" 2>/dev/null; then
+                    git add "$file"
+                    echo "  → $file: aceito upstream (re-scan i18n necessário)"
+                  else
+                    echo "  ❌ $file: não foi possível resolver automaticamente"
+                    RESOLVED=false
+                  fi
+                  ;;
+              esac
+            done
+            
+            if [ "$RESOLVED" = true ]; then
+              git commit --no-edit -m "Merge upstream master (auto-resolved conflicts preserving i18n and deploy customizations)"
+              echo "✅ Conflitos resolvidos automaticamente"
+            else
+              echo "❌ Conflitos que precisam resolução manual — abortando"
+              git merge --abort
+              exit 1
+            fi
+          fi
+
+      - name: Push changes
+        if: steps.check.outputs.new_commits != '0'
+        run: git push origin master
