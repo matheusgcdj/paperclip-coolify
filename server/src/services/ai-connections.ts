@@ -650,7 +650,7 @@ export function aiConnectionService(db: Db) {
             config: {
               sourceTemplateKey: input.provider,
               ai: { provider: input.provider, method: input.method },
-              ...(input.baseUrl ? { baseUrl: input.baseUrl } : {}),
+              ...("baseUrl" in input && input.baseUrl ? { baseUrl: input.baseUrl } : {}),
               aiIsolatedSubscription: input.method === "subscription" && input.provider !== "anthropic",
             },
             createdByUserId: userId,
