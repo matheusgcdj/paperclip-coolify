@@ -278,7 +278,9 @@ export async function prepareManagedAiRuntime(
         ? rawEnv.OPENAI_BASE_URL
         : typeof (rawEnv.OPENAI_BASE_URL as { value?: unknown } | undefined)?.value === "string"
           ? (rawEnv.OPENAI_BASE_URL as { value: string }).value
-          : (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0 ? process.env.OPENAI_BASE_URL.trim() : undefined);
+          : typeof selection.connection?.config?.baseUrl === "string"
+            ? selection.connection.config.baseUrl
+            : (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0 ? process.env.OPENAI_BASE_URL.trim() : undefined);
     const configuredAnthropicBaseUrl =
       typeof rawEnv.ANTHROPIC_BASE_URL === "string"
         ? rawEnv.ANTHROPIC_BASE_URL

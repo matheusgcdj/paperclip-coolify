@@ -163,6 +163,7 @@ export interface AiManagedConnectionSummary {
   provider: AiProvider;
   method: AiAuthMethod;
   name: string;
+  baseUrl?: string;
   accountLabel?: string;
   ownership: "personal" | "shared";
   ownerUserId?: string;

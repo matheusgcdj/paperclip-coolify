@@ -180,7 +180,7 @@ export function AgentProviderConnection({
         connection = { env: {}, aiConnection: { provider: aiProvider, method: "subscription", mode: "responsible_user" } };
       }
       if (connection.credentials) {
-        await aiConnectionsApi.create(companyId, { provider: aiProvider, method: "api_key", name: `My ${provider} API`, ownership: "personal", apiKey: connection.credentials[envKey], agentIds: [], allAgents: true });
+        await aiConnectionsApi.create(companyId, { provider: aiProvider, method: "api_key", name: `My ${aiProvider === "openai" && connection.env?.OPENAI_BASE_URL ? "OpenAI-Compatible" : aiProvider === "xai" ? "Grok" : aiProvider === "anthropic" ? "Claude" : (aiProvider as string) === "openrouter" ? "OpenRouter" : "OpenAI"} API`, ownership: "personal", apiKey: connection.credentials[envKey] as string, baseUrl: connection.env?.OPENAI_BASE_URL as string | undefined, agentIds: [], allAgents: true });
         connection = { env: {}, aiConnection: { provider: aiProvider, method: "api_key", mode: "responsible_user" } };
       }
       if (run !== epoch.current) return;

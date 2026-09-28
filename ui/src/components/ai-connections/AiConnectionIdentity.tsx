@@ -11,11 +11,12 @@ export function AiConnectionIdentity({
 }: {
   connection: AiConnectionSummary;
 }) {
-  const provider = AI_PROVIDERS[connection.provider];
+  const isCompatible = connection.provider === "openai" && connection.baseUrl;
+  const provider = isCompatible ? { name: "OpenAI-Compatible", logo: "/brands/apps/openai.svg" } : AI_PROVIDERS[connection.provider];
   const Icon = connection.ownership === "shared" ? Building2 : UserRound;
   return (
     <div className="flex min-w-0 items-start gap-3">
-      <AppLogo name={provider.name} brandKey={connection.provider} logoUrl={provider.logo} size={24} />
+      <AppLogo name={provider.name} brandKey={isCompatible ? "openai_compatible" : connection.provider} logoUrl={provider.logo} size={24} />
       <div className="flex min-w-0 flex-col gap-1">
         <span className="break-words text-sm font-medium">
           {connection.name}

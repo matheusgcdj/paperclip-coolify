@@ -1858,7 +1858,7 @@ function OnboardingWizardInner({
         await aiConnectionsApi.create(companyId, {
           provider: managedProvider,
           method: "api_key",
-          name: `My ${CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider} API`,
+          name: `My ${isCompatible ? "OpenAI-Compatible" : (CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider)} API`,
           ownership: "personal",
           apiKey: (key as string),
           baseUrl: baseUrl.trim() || undefined,

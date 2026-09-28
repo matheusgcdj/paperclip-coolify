@@ -132,6 +132,7 @@ export function aiConnectionService(db: Db) {
           grantId: grant.id,
           companyId,
           ...metadata.data,
+          baseUrl: typeof connection.config.baseUrl === "string" ? connection.config.baseUrl : undefined,
           name: connection.name,
           accountLabel: grant.providerTenant?.name,
           ...(needsReconnect ? { unavailableReason: "Reconnect with a separate sign-in to protect your existing terminal login." } : {}),
@@ -649,6 +650,7 @@ export function aiConnectionService(db: Db) {
             config: {
               sourceTemplateKey: input.provider,
               ai: { provider: input.provider, method: input.method },
+              ...(input.baseUrl ? { baseUrl: input.baseUrl } : {}),
               aiIsolatedSubscription: input.method === "subscription" && input.provider !== "anthropic",
             },
             createdByUserId: userId,
