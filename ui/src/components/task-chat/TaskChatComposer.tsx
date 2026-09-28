@@ -1511,6 +1511,7 @@ export function TaskChatComposer({
                 value={assigneeValue}
                 options={reassignOptions ?? []}
                 placeholder={t("Assignee")}
+                mobileTitle="Select assignee"
                 noneLabel={t("No assignee")}
                 searchPlaceholder={t("Search assignees…")}
                 emptyMessage={t("No matches.")}
