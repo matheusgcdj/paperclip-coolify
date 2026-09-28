@@ -30,13 +30,28 @@ function possessive(label: string): string {
 /**
  * Keep intentionally customized account names, while making the default app
  * name useful in a multi-user company ("Dotta’s Notion", "Sam’s Gmail").
+ * Connections with a custom baseUrl targeting an OpenAI-compatible provider
+ * show "OpenAI-Compatible" instead of the plain "OpenAI" default.
  */
 export function connectionDisplayNameForOwner(
-  connection: Pick<ToolConnection, "name">,
+  connection: Pick<ToolConnection, "name" | "config">,
   applicationName: string,
   owner: ConnectionOwnerProfile | null,
 ): string {
   const rawName = connection.name.trim();
+  // Detect OpenAI-compatible connections (custom baseUrl) and override the
+  // confusing "My OpenAI API" default name with a clearer label.
+  const hasCustomBaseUrl =
+    typeof connection.config?.baseUrl === "string" &&
+    connection.config.baseUrl.trim().length > 0;
+  const isOpenAiCompatible =
+    hasCustomBaseUrl &&
+    (connection.config?.ai as { provider?: string } | undefined)?.provider === "openai";
+  if (isOpenAiCompatible && /^my openai api$/i.test(rawName)) {
+    return owner
+      ? `${possessive(ownerGivenName(owner.label))} OpenAI-Compatible API`
+      : "My OpenAI-Compatible API";
+  }
   // Provider account identifiers are machine values, not prose. Preserve
   // their casing and punctuation so an email address or tenant hostname stays
   // recognizable in the inline account list.

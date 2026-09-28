@@ -45,11 +45,27 @@ export function AiConnectionPicker({
   const compatible = connections.filter((connection) =>
     matchesAiRequirement(connection, requirement),
   );
+  // Detect if the user's personal default is an OpenAI-Compatible connection
   const personalDefault = personalAiDefault(
     connections,
     requirement,
     currentUserId,
   );
+  const hasCompatibleConnection = compatible.some(
+    (c) => c.provider === "openai" && c.baseUrl,
+  );
+  const compatibleConnection = compatible.find(
+    (c) => c.provider === "openai" && c.baseUrl,
+  );
+  const compatibleLabel = compatibleConnection
+    ? compatibleConnection.name
+        .replace(/\s*API$/i, "")
+        .replace(/^My\s+/i, "")
+        .trim() || "OpenAI-Compatible"
+    : "OpenAI-Compatible";
+  const providerDisplay = hasCompatibleConnection && requirement.provider === "openai"
+    ? { name: compatibleLabel, logo: "/brands/apps/openai.svg" }
+    : AI_PROVIDERS[requirement.provider];
   const problem = value ? bindingProblem(
     value,
     requirement,
@@ -72,16 +88,16 @@ export function AiConnectionPicker({
     <section className="flex flex-col gap-4" aria-label="AI connection">
       <div className="flex items-center gap-3">
         <AppLogo
-          name={AI_PROVIDERS[requirement.provider].name}
+          name={providerDisplay.name}
           brandKey={requirement.provider}
-          logoUrl={AI_PROVIDERS[requirement.provider].logo}
+          logoUrl={providerDisplay.logo}
           darkLogoUrl={requirement.provider === "xai" ? "/brands/adapters/grok-dark.svg" : undefined}
           size={32}
         />
         <div className="flex min-w-0 flex-col gap-1">
         <h3 className="text-sm font-semibold">AI connection</h3>
         <p className="text-xs text-muted-foreground">
-          {AI_PROVIDERS[requirement.provider].name}
+          {providerDisplay.name}
           {value && value.mode !== "responsible_user" && ` · ${aiMethodLabel(value.provider, value.method)}`}
         </p>
         </div>
@@ -109,7 +125,7 @@ export function AiConnectionPicker({
             choices={[
               { id: "responsible_user", name: "Responsible user’s connection", description: <>
                 <span className="block">For you: {personalDefault?.name ?? "Not connected"}</span>
-                <span className="block">Other users’ tasks use their own {AI_PROVIDERS[requirement.provider].name} connection.</span>
+                <span className="block">Other users’ tasks use their own {providerDisplay.name} connection.</span>
               </> },
               ...compatible.filter((connection) => connection.ownership === "shared").map((connection) => ({
                 id: connection.id, name: connection.name,

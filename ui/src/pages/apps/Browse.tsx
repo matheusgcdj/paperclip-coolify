@@ -96,6 +96,7 @@ type ConnectorRowModel = {
   applications: ToolApplication[];
   connections: ToolConnection[];
   chatEndpoints: ChatEndpoint[];
+  additionalConnectionHref?: string;
 };
 
 type ConnectionState = {
@@ -576,16 +577,44 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     }
 
     return [...rowsBySlug.values(), ...customRows]
-      .map((row) => ({
-        ...row,
-        connections: [...row.connections].sort(
-          (left, right) =>
-            connectionRank(right) - connectionRank(left) ||
-            left.name.localeCompare(right.name, undefined, {
-              sensitivity: "base",
-            }),
-        ),
-      }))
+      .map((row) => {
+        // Split OpenAI-Compatible connections (with baseUrl) from native OpenAI
+        if (row.slug === "openai" && row.connections.length > 0) {
+          const compatibleConnections = row.connections.filter(
+            (c) => typeof c.config?.baseUrl === "string" && c.config.baseUrl.trim().length > 0,
+          );
+          if (compatibleConnections.length > 0) {
+            const nativeConnections = row.connections.filter(
+              (c) => !(typeof c.config?.baseUrl === "string" && c.config.baseUrl.trim().length > 0),
+            );
+            row = { ...row, connections: nativeConnections };
+            customRows.push({
+              key: "openai-compatible",
+              slug: "openai-compatible",
+              name: "OpenAI-Compatible",
+              description: "Connect any OpenAI-compatible provider with a custom Base URL.",
+              brandKey: "openai",
+              logoUrl: row.logoUrl,
+              darkLogoUrl: row.darkLogoUrl,
+              entry: null,
+              applications: [],
+              connections: compatibleConnections,
+              chatEndpoints: [],
+              additionalConnectionHref: row.slug ? `/apps/connect/${row.slug}` : undefined,
+            });
+          }
+        }
+        return {
+          ...row,
+          connections: [...row.connections].sort(
+            (left, right) =>
+              connectionRank(right) - connectionRank(left) ||
+              left.name.localeCompare(right.name, undefined, {
+                sensitivity: "base",
+              }),
+          ),
+        };
+      })
       .sort(
         (left, right) =>
           rowRank(right) - rowRank(left) ||

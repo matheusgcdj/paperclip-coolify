@@ -693,8 +693,44 @@ function OnboardingWizardInner({
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [isCompatible, setIsCompatible] = useState(false);
+  const [providerName, setProviderName] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
+
+  /** Try to auto-detect a human-friendly provider name from the base URL hostname */
+  function guessProviderName(rawUrl: string): string {
+    try {
+      const host = new URL(rawUrl).hostname.toLowerCase();
+      // Known provider hostnames
+      const known: Record<string, string> = {
+        "api.omniroute.io": "OmniRoute",
+        "omniroute.io": "OmniRoute",
+        "openrouter.ai": "OpenRouter",
+        "api.openrouter.ai": "OpenRouter",
+        "api.together.xyz": "Together AI",
+        "api.fireworks.ai": "Fireworks AI",
+        "api.groq.com": "Groq",
+        "api.deepseek.com": "DeepSeek",
+        "api.mistral.ai": "Mistral",
+        "api.perplexity.ai": "Perplexity",
+        "generativelanguage.googleapis.com": "Google AI",
+        "api.cohere.ai": "Cohere",
+        "api.anthropic.com": "Anthropic",
+        "api.openai.com": "OpenAI",
+      };
+      if (known[host]) return known[host];
+      // localhost / IPs → generic
+      if (host === "localhost" || host.startsWith("127.") || host.startsWith("192.168.") || host.startsWith("10.")) {
+        return "Local Provider";
+      }
+      // Extract brand from subdomain: api.acme.io → Acme
+      const parts = host.replace(/\.localhost$/, "").split(".");
+      const brand = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+      return brand.charAt(0).toUpperCase() + brand.slice(1);
+    } catch {
+      return "";
+    }
+  }
 
   async function fetchProviderModels(explicitUrl?: string, explicitKey?: string) {
     const rawUrl = (explicitUrl ?? baseUrl).trim();
@@ -1858,7 +1894,7 @@ function OnboardingWizardInner({
         await aiConnectionsApi.create(companyId, {
           provider: managedProvider,
           method: "api_key",
-          name: `My ${isCompatible ? "OpenAI-Compatible" : (CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider)} API`,
+          name: isCompatible ? `${providerName.trim() || "OpenAI-Compatible"} API` : `My ${CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider} API`,
           ownership: "personal",
           apiKey: (key as string),
           baseUrl: baseUrl.trim() || undefined,
@@ -2905,12 +2941,39 @@ function OnboardingWizardInner({
                               className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                               placeholder="ex: https://api.omniroute.io/v1"
                               value={baseUrl}
-                              onChange={(e) => setBaseUrl(e.target.value)}
+                              onChange={(e) => {
+                                setBaseUrl(e.target.value);
+                                const guessed = guessProviderName(e.target.value);
+                                if (guessed && !providerName.trim()) setProviderName(guessed);
+                              }}
+                              onBlur={() => {
+                                const guessed = guessProviderName(baseUrl);
+                                if (guessed && !providerName.trim()) setProviderName(guessed);
+                              }}
                             />
                             <p className="text-[11px] text-muted-foreground mt-1">
                               {isPt
                                 ? "Insira o endpoint raiz v1 (ex: https://api.omniroute.io/v1 ou http://localhost:11434/v1)"
                                 : "Enter the root v1 endpoint (e.g. https://api.omniroute.io/v1 or http://localhost:11434/v1)"}
+                            </p>
+                          </div>
+                        )}
+                        {isCompatible && (
+                          <div className="mb-3">
+                            <label className="text-xs font-semibold text-foreground block mb-1">
+                              {isPt ? "Nome do Provedor (Obrigatório)" : "Provider Name (Required)"}
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              placeholder={isPt ? "ex: OmniRoute, LiteLLM, Ollama" : "e.g. OmniRoute, LiteLLM, Ollama"}
+                              value={providerName}
+                              onChange={(e) => setProviderName(e.target.value)}
+                            />
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              {isPt
+                                ? "Este nome será exibido nos conectores e na lista de provedores do agente"
+                                : "This name will appear in connectors and agent provider lists"}
                             </p>
                           </div>
                         )}
