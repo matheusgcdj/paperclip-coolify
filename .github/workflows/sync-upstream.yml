@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Configure git
         run: |
@@ -87,6 +87,20 @@ jobs:
               git merge --abort
               exit 1
             fi
+          fi
+
+      - name: Sanitize workflows if using default GITHUB_TOKEN
+        if: steps.check.outputs.new_commits != '0' && env.HAS_SYNC_PAT != 'true'
+        env:
+          HAS_SYNC_PAT: ${{ secrets.SYNC_PAT != '' }}
+        run: |
+          WF_CHANGED=$(git diff HEAD@{1} HEAD --name-only -- .github/workflows/ 2>/dev/null || true)
+          if [ -n "$WF_CHANGED" ]; then
+            echo "⚠️ Alterações em .github/workflows/ detectadas sob GITHUB_TOKEN padrão."
+            echo "Revertendo workflows para evitar rejeição de permissão do GitHub:"
+            echo "$WF_CHANGED"
+            git checkout HEAD@{1} -- .github/workflows/
+            git commit --amend --no-edit
           fi
 
       - name: Push changes
