@@ -1,6 +1,6 @@
 import { hasWorkspaceRestoreFailure } from "@paperclipai/shared";
 import { workspaceRestoreMarkerDetail } from "@/lib/workspace-restore-marker";
-import type { ActivityEvent } from "@paperclipai/shared";
+import type { ActivityEvent, TaskBrowser } from "@paperclipai/shared";
 import { useProjectCreatedItems } from "@/hooks/useProjectCreatedItems";
 import { skillCreatedItems } from "@/components/task-chat/skill-created-items";
 import { requiresExecutionReconciliation } from "@paperclipai/shared";
@@ -87,6 +87,7 @@ import {
   taskChatContentKey,
 } from "@/components/task-chat/TaskChatThreadView";
 import { TaskChatComposer } from "@/components/task-chat/TaskChatComposer";
+import { TaskChatComposerDock } from "@/components/task-chat/TaskChatComposerDock";
 import {
   RunnerGoalWidget,
   useRunnerGoalControl,
@@ -118,6 +119,8 @@ import { issuesApi } from "@/api/issues";
 import { queryKeys } from "@/lib/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { TaskChatPresentationProvider } from "@/components/task-chat/presentation-mode";
+
+const EMPTY_BROWSERS: TaskBrowser[] = [];
 
 function toMs(value: Date | string | null | undefined): number {
   if (!value) return 0;
@@ -510,6 +513,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
     conversationMode,
     reassignOptions,
     currentAssigneeValue,
+    assigneeAdapterOverrides,
     issueStatus,
     issueAssigneeAgentId = null,
     onAcceptInteraction,
@@ -520,6 +524,9 @@ export function TaskChatThread(props: TaskChatThreadProps) {
     onSubmitInteractionVerdicts,
     externalReferences,
     threadHeader,
+    browsers = EMPTY_BROWSERS,
+    onOpenBrowser,
+    hasOlderComments = false,
     issueBrief,
     feedbackVotes,
     feedbackDataSharingPreference = "prompt",
@@ -1317,12 +1324,35 @@ export function TaskChatThread(props: TaskChatThreadProps) {
     for (const item of createdSkillItems) {
       entries.push({ id: item.id, item, ms: toMs(item.timestamp), order: 2 });
     }
+    // Older sessions arrive with their surrounding messages when history is
+    // paged in; otherwise they would collect above the loaded conversation.
+    const historyStart = hasOlderComments
+      ? Math.min(...visibleComments.map((comment) => toMs(comment.conversationAnchorAt ?? comment.createdAt)))
+      : -Infinity;
+    for (const [index, browser] of browsers.entries()) {
+      if (toMs(browser.createdAt) < historyStart) continue;
+      const id = `browser:${browser.sessionId}`;
+      entries.push({
+        id,
+        ms: toMs(browser.createdAt),
+        order: 2,
+        item: {
+          id,
+          kind: "browser",
+          browser,
+          label: browsers.length > 1 ? `Browser ${index + 1}` : "Browser",
+          timestamp: browser.createdAt,
+        },
+      });
+    }
     return entries.sort(
       (a, b) => a.ms - b.ms || a.order - b.order || a.id.localeCompare(b.id),
     );
   }, [
     createdProjectItems,
     createdSkillItems,
+    browsers,
+    hasOlderComments,
     comments,
     projectedComments,
     commentItems,
@@ -2893,6 +2923,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
                     onRetryFailedRun={retryFailedRunHandler}
                     retryFailedRunId={retryFailedRunId}
                     onOpenSkill={onOpenSkill}
+                    onOpenBrowser={onOpenBrowser}
                     tail={
                       tailRunId ||
                       optimisticRunnerStartup ||
@@ -2985,28 +3016,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
               </div>
             ) : null}
             {showComposer ? (
-              <div
-                data-testid="task-chat-composer-dock"
-                className={cn(
-                  "sticky",
-                  // Mobile mirrors the flag-off thread's dock: lifted above the
-                  // safe-area inset and clear of the auto-hiding bottom nav, above
-                  // page content in the document-flow stacking context. The bottom
-                  // offset (--tc-composer-bottom) tracks the nav: Layout raises it to
-                  // the nav height while the nav is visible so the composer's action
-                  // row is never occluded, and drops it back to the safe-area dock
-                  // when the nav auto-hides (PAP-495). transition-[bottom] rides the
-                  // nav's own 200ms slide; the offset only changes on nav toggles, so
-                  // it never animates mid-scroll.
-                  isMobile
-                    ? "bottom-(--tc-composer-bottom) z-20 transition-[bottom] duration-200 ease-out"
-                    : "bottom-0 z-10",
-                  "mx-auto flex w-full max-w-(--tc-shell-max-w) flex-col gap-2 px-1 pb-1 md:px-4 md:pb-2",
-                  streamlinedUiEnabled && "md:px-0 md:pb-0",
-                  (!streamlinedUiEnabled || isMobile) &&
-                    "bg-background/80 pt-1 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:bg-transparent dark:backdrop-blur-none dark:supports-[backdrop-filter]:bg-transparent",
-                )}
-              >
+              <TaskChatComposerDock mobile={isMobile} streamlined={streamlinedUiEnabled}>
                 {composerAccessory}
                 {tailTurnStatus ? (
                   <TaskChatTurnStatusIsland model={tailTurnStatus} />
@@ -3079,8 +3089,11 @@ export function TaskChatThread(props: TaskChatThreadProps) {
                       conversationMode={conversationMode}
                       reassignOptions={reassignOptions}
                       agentMap={agentMap}
+                      modelAgents={agentMap}
                       userProfileMap={userProfileMap}
                       currentAssigneeValue={currentAssigneeValue}
+                      companyId={companyId}
+                      assigneeAdapterOverrides={assigneeAdapterOverrides}
                       onPendingAssigneeChange={setPendingComposerAssignee}
                       issueStatus={issueStatus}
                       mobile={isMobile}
@@ -3106,7 +3119,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
                   </div>
                 </div>
                 {footer}
-              </div>
+              </TaskChatComposerDock>
             ) : null}
           </div>
         </TaskChatPresentationProvider>

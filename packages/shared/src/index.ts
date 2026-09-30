@@ -1962,6 +1962,7 @@ export {
   issueExecutionPolicySchema,
   issueExecutionStateSchema,
   resolveIssueRecoveryActionSchema,
+  retryWorkspaceExportSchema,
   issueReviewRequestSchema,
   issueExecutionWorkspaceSettingsSchema,
   checkoutIssueSchema,
@@ -2331,10 +2332,6 @@ export {
   resolveCliAuthChallengeSchema,
   createBoardApiKeySchema,
   currentUserProfileSchema,
-  currentUserPreferencesSchema,
-  updateCurrentUserPreferencesSchema,
-  type CurrentUserPreferences,
-  type UpdateCurrentUserPreferences,
   authSessionSchema,
   updateCurrentUserProfileSchema,
   updateCompanyMemberSchema,
@@ -2791,4 +2788,14 @@ export * from "./slack-tools.js";
 export { MEMORY_CONNECTOR_IDS, isMemoryConnectorId, type MemoryConnectorId } from "./memory-connectors.js";
 export * from "./connection-routing.js";
 
-export { WORKSPACE_RESTORE_FAILURE_CODES, hasWorkspaceRestoreFailure, safeWorkspaceRestorePath } from "./workspace-restore.js";
+export { WORKSPACE_RESTORE_FAILURE_CODES, hasWorkspaceRestoreFailure, safeWorkspaceRestorePath, isNativeWorkspaceExportRepairCause } from "./workspace-restore.js";
+
+
+export type { AgentInstructionErrorCode, AgentInstructionErrorDetails, AgentInstructionSource, AgentInstructionRevision, AgentInstructionSnapshot, AgentInstructionCommitReceipt, AgentInstructionHistory, AgentInstructionDiff } from "./types/agent.js";
+export { restoreAgentInstructionSchema } from "./validators/agent.js";
+
+export type { AgentInstructionCandidate } from "./types/agent.js";
+export { resolveAgentInstructionCandidateSchema, type ResolveAgentInstructionCandidate } from "./validators/agent.js";
+
+export { isHeartbeatRunVisibleInMine } from "./heartbeat-inbox.js";
+export * from "./browser-use.js";
