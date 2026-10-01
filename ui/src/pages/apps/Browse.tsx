@@ -23,6 +23,7 @@ import {
   getAppStoreDefinition,
   isToolConnectionAttentionHealth,
   aiSubscriptionNeedsIsolatedLogin,
+  GOOGLE_WORKSPACE_CONNECTOR_PROFILES,
 } from "@paperclipai/shared";
 import { useNavigate } from "@/lib/router";
 import { useChatConnectorsEnabled } from "@/hooks/useChatConnectorsEnabled";
@@ -31,8 +32,6 @@ import { appCopyFor } from "@/lib/app-gallery-copy";
 import { useCompany } from "@/context/CompanyContext";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useToast } from "@/context/ToastContext";
-import { useTranslation, getCurrentLocale } from "@/i18n";
-import { translateText } from "@/i18n/auto-translate";
 import { queryKeys } from "@/lib/queryKeys";
 import { toolsApi } from "@/api/tools";
 import {
@@ -65,6 +64,7 @@ import { buildCompanyUserProfileMap } from "@/lib/company-members";
 import { AppLogo } from "./AppLogo";
 import {
   appApplicationSourceSlug,
+  appConnectionSourceSlug,
   appDefinitionDarkLogoUrl,
   appDefinitionDescription,
   appDefinitionLogoUrl,
@@ -96,7 +96,6 @@ type ConnectorRowModel = {
   applications: ToolApplication[];
   connections: ToolConnection[];
   chatEndpoints: ChatEndpoint[];
-  additionalConnectionHref?: string;
 };
 
 type ConnectionState = {
@@ -113,6 +112,13 @@ type ConnectionRemovalTarget = {
   remainingConnectionCount: number;
 
 };
+
+// Temporary, page-only hold until Google OAuth verification is approved.
+// Keep definitions, direct setup/management routes, and runtime access intact.
+// Remove this filter after approval; reviewer instances stay on their pinned build.
+const GOOGLE_CONNECTOR_SLUGS = new Set(
+  Object.values(GOOGLE_WORKSPACE_CONNECTOR_PROFILES).map((profile) => profile.appSlug),
+);
 
 function chatProviderForSlug(slug: string): ChatProvider | null {
   const method = getAppStoreDefinition(slug)?.methods.find(
@@ -391,9 +397,8 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     ).filter(
       (application) =>
         application.status !== "archived" &&
-        (chatConnectorsEnabled ||
-          (application.type !== "chat" &&
-            application.metadata?.purpose !== "channel")),
+        application.type !== "chat" &&
+        application.metadata?.purpose !== "channel",
     );
     const connectionsByApplicationId = new Map<string, ToolConnection[]>();
     for (const connection of activeConnections) {
@@ -432,51 +437,46 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
         chatEndpoints: [],
       });
     }
-    const nativeChatProviders = [
-      { provider: "imessage-photon", name: "iMessage Photon", description: "Message agents and share photos from Apple Messages with a dedicated Photon number." },
+    const nativeChatApps = [
+      { slug: "imessage-photon", name: "iMessage Photon", description: "Message agents and share photos from Apple Messages with a dedicated Photon number." },
       {
-        provider: "slack",
+        slug: "slack",
         name: "Slack",
         description:
           "Chat with agents from Slack channels and direct messages.",
       },
       {
-        provider: "github",
-        name: "GitHub",
+        slug: "github-code-review-bot",
+        name: "GitHub Code Review Bot",
         description:
-          "Chat with agents from issues, pull requests, and review threads.",
+          "Have an agent review pull requests and respond to GitHub mentions.",
       },
       {
-        provider: "discord",
+        slug: "discord",
         name: "Discord",
         description:
           "Chat with agents from Discord channels, threads, and direct messages.",
       },
       {
-        provider: "microsoft-teams",
+        slug: "microsoft-teams",
         name: "Microsoft Teams",
         description: "Chat with agents from Teams channels and conversations.",
       },
       {
-        provider: "telegram",
+        slug: "telegram",
         name: "Telegram",
         description:
           "Chat with agents from Telegram direct messages, groups, and topics.",
       },
     ] as const;
-    for (const item of chatConnectorsEnabled ? nativeChatProviders : []) {
-      if (
-        [...rowsBySlug.values()].some(
-          (row) => chatProviderForSlug(row.slug) === item.provider,
-        )
-      )
-        continue;
-      rowsBySlug.set(item.provider, {
-        key: `native-chat:${item.provider}`,
-        slug: item.provider,
+    for (const item of chatConnectorsEnabled ? nativeChatApps : []) {
+      if (rowsBySlug.has(item.slug)) continue;
+      rowsBySlug.set(item.slug, {
+        key: `native-chat:${item.slug}`,
+        slug: item.slug,
         name: item.name,
         description: item.description,
-        brandKey: item.provider,
+        brandKey: item.slug,
         entry: null,
         applications: [],
         connections: [],
@@ -486,8 +486,18 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
 
     const customRows: ConnectorRowModel[] = [];
     for (const application of activeApplications) {
-      const appConnections =
+      const applicationSlug = appApplicationSourceSlug(application);
+      const savedAppConnections =
         connectionsByApplicationId.get(application.id) ?? [];
+      const appConnections = savedAppConnections.filter(
+        (connection) => !GOOGLE_CONNECTOR_SLUGS.has(appConnectionSourceSlug(connection) ?? ""),
+      );
+      // Hide source-only Google rows, but keep independently identified connectors.
+      if (
+        (!applicationSlug || applicationSlug === "link") &&
+        savedAppConnections.length > 0 &&
+        appConnections.length === 0
+      ) continue;
       const configuredConnectionSlug = appConnections
         .map(
           (connection) =>
@@ -509,7 +519,6 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
             : null,
         )
         .find((value): value is string => Boolean(value));
-      const applicationSlug = appApplicationSourceSlug(application);
       const resolvedSlug =
         applicationSlug &&
         applicationSlug !== "link" &&
@@ -577,44 +586,17 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     }
 
     return [...rowsBySlug.values(), ...customRows]
-      .map((row) => {
-        // Split OpenAI-Compatible connections (with baseUrl) from native OpenAI
-        if (row.slug === "openai" && row.connections.length > 0) {
-          const compatibleConnections = row.connections.filter(
-            (c) => typeof c.config?.baseUrl === "string" && c.config.baseUrl.trim().length > 0,
-          );
-          if (compatibleConnections.length > 0) {
-            const nativeConnections = row.connections.filter(
-              (c) => !(typeof c.config?.baseUrl === "string" && c.config.baseUrl.trim().length > 0),
-            );
-            row = { ...row, connections: nativeConnections };
-            customRows.push({
-              key: "openai-compatible",
-              slug: "openai-compatible",
-              name: "OpenAI-Compatible",
-              description: "Connect any OpenAI-compatible provider with a custom Base URL.",
-              brandKey: "openai",
-              logoUrl: row.logoUrl,
-              darkLogoUrl: row.darkLogoUrl,
-              entry: null,
-              applications: [],
-              connections: compatibleConnections,
-              chatEndpoints: [],
-              additionalConnectionHref: row.slug ? `/apps/connect/${row.slug}` : undefined,
-            });
-          }
-        }
-        return {
-          ...row,
-          connections: [...row.connections].sort(
-            (left, right) =>
-              connectionRank(right) - connectionRank(left) ||
-              left.name.localeCompare(right.name, undefined, {
-                sensitivity: "base",
-              }),
-          ),
-        };
-      })
+      .filter((row) => !GOOGLE_CONNECTOR_SLUGS.has(row.slug))
+      .map((row) => ({
+        ...row,
+        connections: [...row.connections].sort(
+          (left, right) =>
+            connectionRank(right) - connectionRank(left) ||
+            left.name.localeCompare(right.name, undefined, {
+              sensitivity: "base",
+            }),
+        ),
+      }))
       .sort(
         (left, right) =>
           rowRank(right) - rowRank(left) ||
@@ -806,20 +788,11 @@ export function ConnectorCard({
   preselectedAgentId?: string | null;
   chatConnectorsEnabled: boolean;
 }) {
-  const { t } = useTranslation();
-  const title = t(row.name);
-  const localizedDescription = useMemo(() => {
-    const direct = t(row.description);
-    if (direct !== row.description) return direct;
-    return translateText(row.description, getCurrentLocale()) ?? row.description;
-  }, [row.description, t]);
-
   const action = connectorAction(
     row,
     chatConnectorsEnabled,
     preselectedAgentId,
   );
-  const actionLabel = t(action.label);
   return (
     <div
       role="listitem"
@@ -840,9 +813,9 @@ export function ConnectorCard({
           size={36}
         />
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+          <h2 className="text-sm font-semibold text-foreground">{row.name}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {localizedDescription}
+            {row.description}
           </p>
         </div>
         <Button
@@ -850,13 +823,13 @@ export function ConnectorCard({
           size="sm"
           variant="outline"
           disabled={!action.href}
-          title={action.title ? t(action.title) : undefined}
+          title={action.title}
           onClick={() => {
             if (action.href) onNavigate(action.href);
           }}
-          aria-label={`${actionLabel} ${title}`}
+          aria-label={`${action.label} ${row.name}`}
         >
-          {actionLabel}
+          {action.label}
         </Button>
       </div>
 
@@ -897,17 +870,17 @@ export function ConnectorCard({
           {row.chatEndpoints.map((endpoint) => (
             <div
               key={endpoint.id}
-              className="flex flex-wrap items-center gap-3 px-4 py-3"
+              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
             >
               <div className="min-w-0 flex-1">
                 <button
                   type="button"
-                  className="truncate text-left text-sm font-medium hover:underline"
+                  className="block max-w-full truncate text-left text-sm font-medium hover:underline"
                   onClick={() =>
                     onNavigate(`/apps/chat/${endpoint.id}/settings`)
                   }
                 >
-                  {endpoint.assignedAgentName} · {endpoint.provider === "agentmail" ? "Email" : "Chat"}
+                  {endpoint.assignedAgentName} · {endpoint.provider === "agentmail" ? "Email" : endpoint.provider === "github" ? "Code review bot" : "Chat"}
                 </button>
                 <p className="truncate text-xs text-muted-foreground">
                   {endpoint.providerAccountLabel ??
@@ -915,10 +888,10 @@ export function ConnectorCard({
                     "Provider identity"}
                 </p>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {endpoint.status.replace(/_/g, " ")}
-              </span>
               <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {endpoint.status.replace(/_/g, " ")}
+                </span>
                 {endpoint.status === "draft" ? (
                   <Button
                     size="sm"
