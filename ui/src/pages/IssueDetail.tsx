@@ -9,7 +9,6 @@ import { clearLegacyChatMessageRequests } from "@/lib/chat-message-request";
 import { agentChatDraft } from "@/lib/agent-chat-draft";
 import { Settings as ChatSettings } from "lucide-react";
 import { agentDetailHref } from "./agent-detail-navigation";
-import { deriveInitials } from "@/components/Identity";
 import { ExecutionBlockerNotice } from "../components/ExecutionBlockerNotice";
 import type { TaskComposerPause } from "../components/task-chat/TaskChatPausedTakeover";
 import { TaskDetailTasksPanel } from "@/components/task-detail/TaskDetailTasksPanel";
@@ -1537,15 +1536,30 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
   const [localSteeringPlacements, setLocalSteeringPlacements] = useState<
     ReadonlyMap<
       string,
-      { targetRunId: string; anchorAt: string; sequence: number }
+      {
+        targetRunId: string;
+        anchorAt: string;
+        sequence: number;
+        comment?: IssueDetailComment;
+      }
     >
   >(() => new Map());
+  const [localInterruptPlacements, setLocalInterruptPlacements] = useState<
+    ReadonlyMap<
+      string,
+      { anchorAt: string; sequence: number; comment?: IssueDetailComment }
+    >
+  >(() => new Map());
+  const [classicQueuedDeliveryError, setClassicQueuedDeliveryError] =
+    useState<string | null>(null);
   useEffect(() => {
     setConsumedQueuedCommentIds(new Set());
     setDiscardedQueuedCommentIds(new Set());
   }, [issueId]);
   useEffect(() => {
     setLocalSteeringPlacements(new Map());
+    setLocalInterruptPlacements(new Map());
+    setClassicQueuedDeliveryError(null);
   }, [issueId]);
   const hasLiveRuns = liveRunCount > 0 || !!resolvedActiveRun;
   const {
@@ -1758,7 +1772,20 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
       }
     }
 
-    const projectedComments = comments.map((comment) => {
+    // The queue can contain a saved message outside the loaded history page.
+    // Keep its optimistic bubble until the canonical comment is available.
+    const commentsToProject = [...comments];
+    const loadedCommentIds = new Set(comments.map((comment) => comment.id));
+    for (const placement of [
+      ...localSteeringPlacements.values(),
+      ...localInterruptPlacements.values(),
+    ]) {
+      if (placement.comment && !loadedCommentIds.has(placement.comment.id)) {
+        commentsToProject.push(placement.comment);
+        loadedCommentIds.add(placement.comment.id);
+      }
+    }
+    const projectedComments = commentsToProject.map((comment) => {
       const activityMeta = runMetaByCommentId.get(comment.id);
       // Internal run finalization can persist a reply without a separate
       // comment_added activity row. Its durable authoring run is stronger
@@ -1986,6 +2013,7 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
     interactions,
     liveRunIds,
     localSteeringPlacements,
+    localInterruptPlacements,
     locallyQueuedCommentRunIds,
     queuedCommentReason,
     resolvedActivity,
@@ -2022,8 +2050,8 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
       return targetRunId ? [{ comment, targetRunId }] : [];
     });
     const fallbackProtocol =
-      liveRuntimeRun?.runtimeMode === "native" &&
-      liveRuntimeRun.adapterType === "paperclip_runner"
+      liveRuntimeRun?.adapterType === "paperclip_runner" ||
+      (!liveRuntimeRun && assigneeUsesPaperclipRunner)
         ? "paperclip_runner_v1"
         : "legacy";
     return mergePendingIssueQueuedComments({
@@ -2039,6 +2067,7 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
     discardedQueuedCommentIds,
     issueId,
     liveRuntimeRun,
+    assigneeUsesPaperclipRunner,
     locallyQueuedCommentRunIds,
     queuedCommentQueueEnabled,
   ]);
@@ -2050,6 +2079,12 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
         return [
           {
             ...comment,
+            ...(!comment.consumedByRunId && localInterruptPlacements.has(comment.id)
+              ? {
+                  conversationAnchorAt: localInterruptPlacements.get(comment.id)!.anchorAt,
+                  conversationAnchorSequence: localInterruptPlacements.get(comment.id)!.sequence,
+                }
+              : {}),
             clientStatus: undefined,
             queueState: undefined,
             queueTargetRunId: null,
@@ -2057,7 +2092,12 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
           },
         ];
       }),
-    [commentsWithRunMeta, consumedQueuedCommentIds, discardedQueuedCommentIds],
+    [
+      commentsWithRunMeta,
+      consumedQueuedCommentIds,
+      discardedQueuedCommentIds,
+      localInterruptPlacements,
+    ],
   );
 
   const storeQueuedCommentQueue = useCallback(
@@ -2147,6 +2187,23 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
         throw new Error(
           "The queued message no longer has an active run target.",
         );
+      const anchorAt = new Date().toISOString();
+      setLocalSteeringPlacements((current) => {
+        const next = new Map(current);
+        const sequence = [...current.values()].filter(
+          (placement) => placement.targetRunId === targetRunId,
+        ).length;
+        next.set(commentId, {
+          targetRunId,
+          anchorAt,
+          sequence,
+          comment: effectiveQueuedCommentQueue?.entries.find(
+            (entry) => entry.comment.id === commentId,
+          )?.comment,
+        });
+        return next;
+      });
+      setConsumedQueuedCommentIds((current) => new Set(current).add(commentId));
       try {
         const nextQueue = await issuesApi.steerQueuedComment(
           issueId,
@@ -2157,23 +2214,10 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
             revision,
           },
         );
-        // Keep the queue component mounted until the server accepts steering:
-        // its pending/error state must survive a rejected last-row action.
-        const anchorAt = new Date().toISOString();
-        setLocalSteeringPlacements((current) => {
-          const next = new Map(current);
-          const sequence = [...current.values()].filter(
-            (placement) => placement.targetRunId === targetRunId,
-          ).length;
-          next.set(commentId, { targetRunId, anchorAt, sequence });
-          return next;
-        });
-        setConsumedQueuedCommentIds((current) => new Set(current).add(commentId));
-        // The local steering placement already promoted the message into the
-        // active turn. Refresh its durable acknowledgement before publishing
-        // the returned queue so the local and server anchors hand off without a
-        // bubble-to-queue-to-bubble jump.
-        await Promise.all([
+        // The local placement bridges the durable receipt refresh. Release the
+        // control as soon as delivery is acknowledged, even on a slow refetch.
+        storeQueuedCommentQueue(nextQueue);
+        void Promise.all([
           queryClient.invalidateQueries({
             queryKey: queryKeys.issues.comments(issueId),
           }),
@@ -2181,7 +2225,6 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
             queryKey: queryKeys.issues.activity(issueQueryRef),
           }),
         ]);
-        storeQueuedCommentQueue(nextQueue);
       } catch (error) {
         setConsumedQueuedCommentIds((current) => {
           const next = new Set(current);
@@ -2197,13 +2240,59 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
       }
     },
     [
-      effectiveQueuedCommentQueue?.queueId,
-      effectiveQueuedCommentQueue?.targetRunId,
+      effectiveQueuedCommentQueue,
       issueId,
       issueQueryRef,
       queryClient,
       refreshQueueAfterConflict,
       storeQueuedCommentQueue,
+    ],
+  );
+
+  const interruptQueuedComments = useCallback(
+    async (runId: string | null) => {
+      const queuedComments = effectiveQueuedCommentQueue?.targetRunId === runId
+        ? effectiveQueuedCommentQueue.entries.map((entry) => entry.comment)
+        : commentsWithRunMeta.filter(
+            (comment) => comment.queueState === "queued" && comment.queueTargetRunId === runId,
+          );
+      const ids = queuedComments.map((comment) => comment.id);
+      const anchorAt = new Date().toISOString();
+      setClassicQueuedDeliveryError(null);
+      setConsumedQueuedCommentIds((current) => new Set([...current, ...ids]));
+      setLocalInterruptPlacements((current) => {
+        const next = new Map(current);
+        queuedComments.forEach((comment, sequence) => {
+          next.set(comment.id, { anchorAt, sequence, comment });
+        });
+        return next;
+      });
+      try {
+        await onInterruptQueued(runId);
+      } catch (error) {
+        setConsumedQueuedCommentIds((current) => {
+          const next = new Set(current);
+          for (const id of ids) next.delete(id);
+          return next;
+        });
+        setLocalInterruptPlacements((current) => {
+          const next = new Map(current);
+          for (const id of ids) next.delete(id);
+          return next;
+        });
+        if (classicTaskInterfaceEnabled) {
+          setClassicQueuedDeliveryError("Couldn’t interrupt. Message is still queued.");
+          return;
+        }
+        await refreshQueueAfterConflict(error);
+      }
+    },
+    [
+      effectiveQueuedCommentQueue,
+      commentsWithRunMeta,
+      onInterruptQueued,
+      refreshQueueAfterConflict,
+      classicTaskInterfaceEnabled,
     ],
   );
 
@@ -2446,7 +2535,7 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
             onReviewConversation={onReviewConversation}
             imageUploadHandler={onImageUpload}
             onAttachImage={onAttachImage}
-            onInterruptQueued={onInterruptQueued}
+            onInterruptQueued={interruptQueuedComments}
             queuedCommentQueue={effectiveQueuedCommentQueue}
             onEditQueuedComment={editQueuedComment}
             onReorderQueuedComments={reorderQueuedComments}
@@ -2496,7 +2585,14 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
             tryAgainNoLiveExecutionPathPending={
               tryAgainNoLiveExecutionPathPending
             }
-            footer={footer}
+            footer={classicQueuedDeliveryError ? (
+              <>
+                <p role="status" className="text-sm text-destructive">
+                  {classicQueuedDeliveryError}
+                </p>
+                {footer}
+              </>
+            ) : footer}
             externalReferences={externalReferences}
             linkCaseReferences={linkCaseReferences}
           />
@@ -5111,23 +5207,10 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
     onSuccess: () => {
       invalidateIssueDetail();
       invalidateIssueRunState();
-      pushToast({
-        title: "Interrupt requested",
-        body: "Queued messages will be sent when the previous run has stopped.",
-        tone: "success",
-      });
     },
-    onError: (err) => {
+    onError: () => {
       invalidateIssueDetail();
       invalidateIssueRunState();
-      pushToast({
-        title: "Interrupt failed",
-        body:
-          err instanceof Error
-            ? err.message
-            : "Unable to interrupt the active run",
-        tone: "error",
-      });
     },
   });
 
@@ -5437,8 +5520,8 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
     if (conversationAgent) {
       setBreadcrumbs([{
         label: conversationAgent.name,
-        leading: <Avatar className="size-6 shrink-0"><AvatarFallback>{deriveInitials(conversationAgent.name)}</AvatarFallback></Avatar>,
-        leadingKey: `agent:${conversationAgent.id}`,
+        leading: <AgentAvatar agent={conversationAgent} size={24} />,
+        leadingKey: `agent:${conversationAgent.id}:${JSON.stringify(conversationAgent.appearance)}`,
         trailing: <Button variant="ghost" size="icon-xs" asChild aria-label={`Configure ${conversationAgent.name}`}><Link to={agentDetailHref(conversationAgent.id, "runtime")}><ChatSettings /></Link></Button>,
         trailingKey: `configure:${conversationAgent.id}`,
       }]);
