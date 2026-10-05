@@ -110,9 +110,11 @@ let mermaidLoaderPromise: Promise<typeof import("mermaid").default> | null = nul
 
 function MarkdownIssueLink({
   issuePathId,
+  href,
   children,
 }: {
   issuePathId: string;
+  href: string;
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
@@ -134,7 +136,7 @@ function MarkdownIssueLink({
 
   return (
     <Link
-      to={`/issues/${identifier}`}
+      to={href}
       data-mention-kind="issue"
       onPointerEnter={() => setEngaged(true)}
       onFocus={() => setEngaged(true)}
@@ -863,7 +865,7 @@ function MarkdownBodyImpl({
       const issueRef = linkIssueReferences ? parseIssueReferenceFromHref(href) : null;
       if (issueRef) {
         return (
-          <MarkdownIssueLink issuePathId={issueRef.issuePathId}>
+          <MarkdownIssueLink issuePathId={issueRef.issuePathId} href={issueRef.href}>
             {linkChildren}
           </MarkdownIssueLink>
         );
