@@ -1,3 +1,4 @@
+import { detectAiProviderNameFromUrl } from "@paperclipai/shared";
 import { AppLogo } from "@/pages/apps/AppLogo";
 import { ConnectionChoiceList } from "@/features/connections/ConnectionChoiceList";
 import { Button } from "@/components/ui/button";
@@ -54,20 +55,39 @@ export function AiConnectionPicker({
     currentUserId,
   );
   const hasCompatibleConnection = compatible.some(
-    (c) => c.provider === "openai" && c.baseUrl,
+    (c) => c.provider === "openai" && Boolean(c.baseUrl),
   );
   const compatibleConnection = compatible.find(
-    (c) => c.provider === "openai" && c.baseUrl,
+    (c) => c.provider === "openai" && Boolean(c.baseUrl),
   );
-  const compatibleLabel = compatibleConnection
+  const detectedCompatibleBrand = compatibleConnection?.baseUrl
+    ? detectAiProviderNameFromUrl(compatibleConnection.baseUrl)
+    : "";
+  const rawCompatibleLabel = compatibleConnection
     ? compatibleConnection.name
         .replace(/\s*API$/i, "")
         .replace(/^My\s+/i, "")
-        .trim() || "OpenAI-Compatible"
-    : "OpenAI-Compatible";
+        .trim()
+    : "";
+  const compatibleLabel =
+    detectedCompatibleBrand ||
+    (rawCompatibleLabel && !/^openai$/i.test(rawCompatibleLabel)
+      ? rawCompatibleLabel
+      : "OpenAI-Compatible");
   const providerDisplay = hasCompatibleConnection && requirement.provider === "openai"
     ? { name: compatibleLabel, logo: "/brands/apps/openai.svg" }
     : AI_PROVIDERS[requirement.provider];
+
+  const formatConnectionName = (c: AiConnectionSummary | undefined) => {
+    if (!c) return "Not connected";
+    if (c.provider === "openai" && c.baseUrl) {
+      const brand = detectAiProviderNameFromUrl(c.baseUrl);
+      if (brand && (/^my openai api( account)?$/i.test(c.name) || /^openai api( account)?$/i.test(c.name) || /^my openai-compatible api$/i.test(c.name) || /^openai-compatible api$/i.test(c.name))) {
+        return c.name.toLowerCase().startsWith("my ") ? `My ${brand} API` : `${brand} API`;
+      }
+    }
+    return c.name;
+  };
   const problem = value ? bindingProblem(
     value,
     requirement,
@@ -126,11 +146,11 @@ export function AiConnectionPicker({
             selectedId={value?.mode === "responsible_user" ? "responsible_user" : value?.connectionId}
             choices={[
               { id: "responsible_user", name: "Responsible user’s connection", description: <>
-                <span className="block">For you: {personalDefault?.name ?? "Not connected"}</span>
+                <span className="block">For you: {formatConnectionName(personalDefault)}</span>
                 <span className="block">Other users’ tasks use their own {providerDisplay.name} connection.</span>
               </> },
               ...compatible.filter((connection) => connection.ownership === "shared").map((connection) => ({
-                id: connection.id, name: connection.name,
+                id: connection.id, name: formatConnectionName(connection),
                 disabled: Boolean(aiConnectionProblem(connection)),
                 description: <>Company shared · {aiMethodLabel(connection.provider, connection.method)}{connection.accountLabel ? ` · ${connection.accountLabel}` : ""}{aiConnectionProblem(connection) ? ` · ${aiConnectionProblem(connection)}` : ""}</>,
               })),

@@ -246,3 +246,46 @@ export function aiSubscriptionNeedsIsolatedLogin(config: Record<string, unknown>
     (metadata.data.provider === "openai" || metadata.data.provider === "xai") &&
     config?.aiIsolatedSubscription !== true;
 }
+
+/** Auto-detect a human-friendly provider name from a base URL (e.g. OmniRoute, DeepSeek, Groq, etc.) */
+export function detectAiProviderNameFromUrl(rawUrl: string | undefined | null): string {
+  if (!rawUrl || typeof rawUrl !== "string") return "";
+  try {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return "";
+    const parsed = trimmed.startsWith("http://") || trimmed.startsWith("https://")
+      ? new URL(trimmed)
+      : new URL(`https://${trimmed}`);
+    const host = parsed.hostname.toLowerCase();
+
+    // Check known provider host patterns
+    if (host.includes("omniroute")) return "OmniRoute";
+    if (host.includes("openrouter")) return "OpenRouter";
+    if (host.includes("together")) return "Together AI";
+    if (host.includes("fireworks")) return "Fireworks AI";
+    if (host.includes("groq")) return "Groq";
+    if (host.includes("deepseek")) return "DeepSeek";
+    if (host.includes("mistral")) return "Mistral";
+    if (host.includes("perplexity")) return "Perplexity";
+    if (host.includes("googleapis") || host.includes("gemini")) return "Google AI";
+    if (host.includes("cohere")) return "Cohere";
+    if (host.includes("anthropic")) return "Anthropic";
+    if (host.includes("ollama")) return "Ollama";
+    if (host.includes("vllm")) return "vLLM";
+    if (host.includes("litellm")) return "LiteLLM";
+    if (host.includes("openai")) return "OpenAI";
+
+    // Localhost / IP addresses
+    if (host === "localhost" || host.startsWith("127.") || host.startsWith("192.168.") || host.startsWith("10.")) {
+      return "Local Provider";
+    }
+
+    // Extract brand from subdomain/domain: api.acme.io → Acme
+    const parts = host.replace(/\.localhost$/, "").split(".");
+    const brand = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+    if (!brand) return "";
+    return brand.charAt(0).toUpperCase() + brand.slice(1);
+  } catch {
+    return "";
+  }
+}

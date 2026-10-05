@@ -65,7 +65,7 @@ export function LanguageSelector({
               </span>
               {active && (
                 <div className="absolute top-2 right-2 text-primary">
-                  <Check className="size-3.5 stroke-[2.5]" />
+                  <Check className="size-3.5 stroke-2" />
                 </div>
               )}
             </button>
@@ -111,7 +111,7 @@ export function LanguageSelector({
         value={matchedLocale.code}
         onValueChange={(val) => handleSelect(val)}
       >
-        <SelectTrigger className="w-[220px] h-9 bg-background">
+        <SelectTrigger className="w-56 h-9 bg-background">
           <Globe className="size-4 text-muted-foreground shrink-0" />
           <SelectValue placeholder="Selecione o idioma">
             <span className="flex items-center gap-2">

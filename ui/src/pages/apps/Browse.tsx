@@ -6,6 +6,7 @@ import { AggregatorAppManager } from "./AggregatorAppManager";
 import {
   aiConnectionRouterPluginKey,
   connectionSetupVerbForApp,
+  detectAiProviderNameFromUrl,
   isRetiredComposioConnection,
   RETIRED_COMPOSIO_MESSAGE,
 } from "@paperclipai/shared";
@@ -715,16 +716,63 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
 
     return [...rowsBySlug.values(), ...customRows, ...aggregatorRows]
       .filter((row) => !GOOGLE_CONNECTOR_SLUGS.has(row.slug) || row.upstreamApps?.some(snapshot => snapshot.accounts.length > 0))
-      .map((row) => ({
-        ...row,
-        connections: [...row.connections].sort(
-          (left, right) =>
-            connectionRank(right) - connectionRank(left) ||
-            left.name.localeCompare(right.name, undefined, {
-              sensitivity: "base",
-            }),
-        ),
-      }))
+      .map((row) => {
+        // Split OpenAI-Compatible connections (with baseUrl) from native OpenAI
+        if (row.slug === "openai" && row.connections.length > 0) {
+          const compatibleConnections = row.connections.filter(
+            (c) => {
+              const url = typeof c.config?.baseUrl === "string" ? c.config.baseUrl.trim() : typeof (c.config?.ai as Record<string, unknown> | undefined)?.baseUrl === "string" ? ((c.config?.ai as Record<string, unknown>).baseUrl as string).trim() : "";
+              return url.length > 0;
+            },
+          );
+          if (compatibleConnections.length > 0) {
+            const nativeConnections = row.connections.filter(
+              (c) => {
+                const url = typeof c.config?.baseUrl === "string" ? c.config.baseUrl.trim() : typeof (c.config?.ai as Record<string, unknown> | undefined)?.baseUrl === "string" ? ((c.config?.ai as Record<string, unknown>).baseUrl as string).trim() : "";
+                return url.length === 0;
+              },
+            );
+            row = { ...row, connections: nativeConnections };
+            // Group compatible connections by detected brand
+            const brandMap = new Map<string, ToolConnection[]>();
+            for (const c of compatibleConnections) {
+              const url = typeof c.config?.baseUrl === "string" ? c.config.baseUrl.trim() : typeof (c.config?.ai as Record<string, unknown> | undefined)?.baseUrl === "string" ? ((c.config?.ai as Record<string, unknown>).baseUrl as string).trim() : "";
+              const brand = detectAiProviderNameFromUrl(url) || "OpenAI-Compatible";
+              const list = brandMap.get(brand) ?? [];
+              list.push(c);
+              brandMap.set(brand, list);
+            }
+            for (const [brand, conns] of brandMap.entries()) {
+              const isOmni = brand.toLowerCase() === "omniroute";
+              customRows.push({
+                key: `openai-compatible-${brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+                slug: `openai-compatible-${brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+                name: brand === "OpenAI-Compatible" ? "OpenAI-Compatible" : brand,
+                description: isOmni
+                  ? "Connect OmniRoute accounts for your agents."
+                  : `Connect ${brand} accounts with a custom OpenAI-compatible endpoint.`,
+                brandKey: "openai",
+                logoUrl: row.logoUrl,
+                darkLogoUrl: row.darkLogoUrl,
+                entry: null,
+                applications: [],
+                connections: conns,
+                chatEndpoints: [],
+              });
+            }
+          }
+        }
+        return {
+          ...row,
+          connections: [...row.connections].sort(
+            (left, right) =>
+              connectionRank(right) - connectionRank(left) ||
+              left.name.localeCompare(right.name, undefined, {
+                sensitivity: "base",
+              }),
+          ),
+        };
+      })
       .sort(
         (left, right) =>
           rowRank(right) - rowRank(left) ||

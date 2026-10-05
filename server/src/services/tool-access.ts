@@ -1618,6 +1618,16 @@ function assertClass3ToolCredentialRefAllowed(ref: {
 function toConnection(row: typeof toolConnections.$inferSelect): ToolConnection {
   connectionPurposeTransportSchema.parse(row);
   const retired = isRetiredComposioConnection(row);
+  const rowConfig = (row.config ?? {}) as Record<string, unknown>;
+  const isAiOpenAi =
+    row.connectionPurpose === "ai" &&
+    (rowConfig.sourceTemplateKey === "openai" ||
+      (rowConfig.ai as { provider?: string } | undefined)?.provider === "openai");
+  const fallbackBaseUrl =
+    isAiOpenAi && !rowConfig.baseUrl && process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0
+      ? process.env.OPENAI_BASE_URL.trim()
+      : undefined;
+  const config = fallbackBaseUrl ? { ...rowConfig, baseUrl: fallbackBaseUrl } : rowConfig;
   return {
     id: row.id,
     companyId: row.companyId,
@@ -1635,7 +1645,7 @@ function toConnection(row: typeof toolConnections.$inferSelect): ToolConnection 
     status: row.status,
     enabled: row.enabled && !retired,
     agentInstructions: row.agentInstructions ?? null,
-    config: row.config ?? {},
+    config,
     transportConfig: row.transportConfig ?? {},
     credentialRefs: row.credentialRefs ?? [],
     credentialSecretRefs: row.credentialSecretRefs ?? [],

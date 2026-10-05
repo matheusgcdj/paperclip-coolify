@@ -19,6 +19,7 @@ import {
 } from "@paperclipai/db";
 import {
   AI_CONNECTION_CAPABILITIES,
+  detectAiProviderNameFromUrl,
   aiConnectionMetadataSchema,
   aiSubscriptionNeedsIsolatedLogin,
   isAiConnectionCompatible,
@@ -135,9 +136,22 @@ export function aiConnectionService(db: Db) {
           grantId: grant.id,
           companyId,
           ...metadata.data,
-          baseUrl: typeof connection.config.baseUrl === "string" ? connection.config.baseUrl : undefined,
+          baseUrl: typeof connection.config.baseUrl === "string"
+            ? connection.config.baseUrl
+            : (metadata.data.provider === "openai" && process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0
+                ? process.env.OPENAI_BASE_URL.trim()
+                : undefined),
           usageProbeSupported: supportsAiConnectionUsage(metadata.data.provider, metadata.data.method),
-          name: connection.name,
+          name: (() => {
+            const effUrl = typeof connection.config.baseUrl === "string"
+              ? connection.config.baseUrl
+              : (metadata.data.provider === "openai" && process.env.OPENAI_BASE_URL ? process.env.OPENAI_BASE_URL.trim() : undefined);
+            const brand = detectAiProviderNameFromUrl(effUrl);
+            if (brand && (/^my openai api( account)?$/i.test(connection.name) || /^openai api( account)?$/i.test(connection.name) || /^my openai-compatible api$/i.test(connection.name) || /^openai-compatible api$/i.test(connection.name))) {
+              return connection.name.toLowerCase().startsWith("my ") ? `My ${brand} API` : `${brand} API`;
+            }
+            return connection.name;
+          })(),
           accountLabel: grant.providerTenant?.name,
           ...(needsReconnect ? { unavailableReason: "Reconnect with a separate sign-in to protect your existing terminal login." } : {}),
           ownership:
@@ -647,7 +661,7 @@ export function aiConnectionService(db: Db) {
           ),
         );
       if (!app) throw unprocessable("Could not find the provider application");
-      if (reconnect)
+      if (reconnect) {
         await tx
           .update(toolConnections)
           .set({
@@ -659,14 +673,24 @@ export function aiConnectionService(db: Db) {
             updatedAt: new Date(),
           })
           .where(eq(toolConnections.id, id));
-      else
+      } else {
+        const effectiveBaseUrl = ("baseUrl" in input && input.baseUrl)
+          ? input.baseUrl
+          : (input.provider === "openai" && process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0
+              ? process.env.OPENAI_BASE_URL.trim()
+              : undefined);
+        const brand = detectAiProviderNameFromUrl(effectiveBaseUrl);
+        let connectionName = input.name;
+        if (brand && (/^my openai api( account)?$/i.test(connectionName) || /^openai api( account)?$/i.test(connectionName) || /^my openai-compatible api$/i.test(connectionName) || /^openai-compatible api$/i.test(connectionName))) {
+          connectionName = connectionName.toLowerCase().startsWith("my ") ? `My ${brand} API` : `${brand} API`;
+        }
         await tx
           .insert(toolConnections)
           .values({
             id,
             companyId,
             applicationId: app.id,
-            name: input.name,
+            name: connectionName,
             uid: `ai-${id}`,
             connectionPurpose: "ai",
             transport: "runtime_auth",
@@ -679,11 +703,12 @@ export function aiConnectionService(db: Db) {
             config: {
               sourceTemplateKey: input.provider,
               ai: { provider: input.provider, method: input.method },
-              ...("baseUrl" in input && input.baseUrl ? { baseUrl: input.baseUrl } : {}),
+              ...(effectiveBaseUrl ? { baseUrl: effectiveBaseUrl } : {}),
               aiIsolatedSubscription: input.method === "subscription" && input.provider !== "anthropic",
             },
             createdByUserId: userId,
           });
+      }
       let accountLabel: string | undefined;
       if (input.method === "subscription" && input.provider !== "anthropic") {
         try {

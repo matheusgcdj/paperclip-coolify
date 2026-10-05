@@ -7,7 +7,7 @@ import { aiProviderForAdapter } from "./ai-connections/AiConnectionField";
 import type { AiConnectionBinding } from "@paperclipai/shared";
 import { storeProviderApiKey } from "../lib/provider-credential";
 import { SavedProviderKeySelect, useSavedProviderKeys } from "./onboarding/SavedProviderKeySelect";
-import { randomAgentAppearance, resolveAgentAppearance, agentAppearanceSchema } from "@paperclipai/shared";
+import { detectAiProviderNameFromUrl, randomAgentAppearance, resolveAgentAppearance, agentAppearanceSchema } from "@paperclipai/shared";
 import { OnboardingCharacter } from "./onboarding/OnboardingCharacter";
 import { useEffect, useState, useMemo, useRef } from "react";
 import type { ComponentType, CSSProperties } from "react";
@@ -699,37 +699,7 @@ function OnboardingWizardInner({
 
   /** Try to auto-detect a human-friendly provider name from the base URL hostname */
   function guessProviderName(rawUrl: string): string {
-    try {
-      const host = new URL(rawUrl).hostname.toLowerCase();
-      // Known provider hostnames
-      const known: Record<string, string> = {
-        "api.omniroute.io": "OmniRoute",
-        "omniroute.io": "OmniRoute",
-        "openrouter.ai": "OpenRouter",
-        "api.openrouter.ai": "OpenRouter",
-        "api.together.xyz": "Together AI",
-        "api.fireworks.ai": "Fireworks AI",
-        "api.groq.com": "Groq",
-        "api.deepseek.com": "DeepSeek",
-        "api.mistral.ai": "Mistral",
-        "api.perplexity.ai": "Perplexity",
-        "generativelanguage.googleapis.com": "Google AI",
-        "api.cohere.ai": "Cohere",
-        "api.anthropic.com": "Anthropic",
-        "api.openai.com": "OpenAI",
-      };
-      if (known[host]) return known[host];
-      // localhost / IPs → generic
-      if (host === "localhost" || host.startsWith("127.") || host.startsWith("192.168.") || host.startsWith("10.")) {
-        return "Local Provider";
-      }
-      // Extract brand from subdomain: api.acme.io → Acme
-      const parts = host.replace(/\.localhost$/, "").split(".");
-      const brand = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
-      return brand.charAt(0).toUpperCase() + brand.slice(1);
-    } catch {
-      return "";
-    }
+    return detectAiProviderNameFromUrl(rawUrl);
   }
 
   async function fetchProviderModels(explicitUrl?: string, explicitKey?: string) {
@@ -1894,7 +1864,7 @@ function OnboardingWizardInner({
         await aiConnectionsApi.create(companyId, {
           provider: managedProvider,
           method: "api_key",
-          name: isCompatible ? `${providerName.trim() || "OpenAI-Compatible"} API` : `My ${CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider} API`,
+          name: isCompatible ? `${providerName.trim() || guessProviderName(baseUrl) || "OpenAI-Compatible"} API` : `My ${CONNECT_SOURCE_NAMES[adapterType] ?? managedProvider} API`,
           ownership: "personal",
           apiKey: (key as string),
           baseUrl: baseUrl.trim() || undefined,
@@ -2951,7 +2921,7 @@ function OnboardingWizardInner({
                                 if (guessed && !providerName.trim()) setProviderName(guessed);
                               }}
                             />
-                            <p className="text-[11px] text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {isPt
                                 ? "Insira o endpoint raiz v1 (ex: https://api.omniroute.io/v1 ou http://localhost:11434/v1)"
                                 : "Enter the root v1 endpoint (e.g. https://api.omniroute.io/v1 or http://localhost:11434/v1)"}
@@ -2970,7 +2940,7 @@ function OnboardingWizardInner({
                               value={providerName}
                               onChange={(e) => setProviderName(e.target.value)}
                             />
-                            <p className="text-[11px] text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {isPt
                                 ? "Este nome será exibido nos conectores e na lista de provedores do agente"
                                 : "This name will appear in connectors and agent provider lists"}
@@ -3007,7 +2977,7 @@ function OnboardingWizardInner({
                                   type="button"
                                   onClick={() => fetchProviderModels()}
                                   disabled={isFetchingModels}
-                                  className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1 cursor-pointer transition-opacity disabled:opacity-50"
+                                  className="text-xs text-primary hover:underline font-medium flex items-center gap-1 cursor-pointer transition-opacity disabled:opacity-50"
                                 >
                                   {isFetchingModels ? (
                                     <>
@@ -3040,7 +3010,7 @@ function OnboardingWizardInner({
                                 <option key={m} value={m} />
                               ))}
                             </datalist>
-                            <p className="text-[11px] text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {availableModels.length > 0
                                 ? isPt
                                   ? `✓ ${availableModels.length} modelos carregados da API. Você pode escolher no menu ou digitar qualquer outro.`
