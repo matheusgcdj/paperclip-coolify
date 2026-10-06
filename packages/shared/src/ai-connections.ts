@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { aiProviderRoutingSchema, aiRoutingHarness, isAiRoutingCompatible, type AiProviderRouting } from "./ai-provider-routing.js";
 
 /** Runtime authentication is a separate transport, never a tool or channel. */
 export const connectionPurposeTransportSchema = z.discriminatedUnion(
@@ -31,6 +32,7 @@ export const AI_PROVIDERS = [
   "openai",
   "openrouter",
   "xai",
+  "google",
 ] as const;
 export const aiProviderSchema = z.enum(AI_PROVIDERS);
 export const aiAuthMethodSchema = z.enum(["subscription", "api_key"]);
@@ -56,7 +58,7 @@ export const aiConnectionBindingSchema = z.discriminatedUnion("mode", [
   z
     .object({
       ...requirement,
-      // Legacy wire format only; human access still applies. New UI never creates it.
+      // Explicit personal selection. Human access still applies on every run.
       mode: z.literal("delegated"),
       connectionId: z.string().uuid(),
       grantId: z.string().uuid(),
@@ -64,7 +66,7 @@ export const aiConnectionBindingSchema = z.discriminatedUnion("mode", [
     .strict(),
 ]);
 export type AiConnectionBinding = z.infer<typeof aiConnectionBindingSchema>;
-export const aiConnectionMetadataSchema = z.object(requirement).strict();
+export const aiConnectionMetadataSchema = z.object({ ...requirement, routing: aiProviderRoutingSchema.optional() }).strict();
 export type AiConnectionMetadata = z.infer<typeof aiConnectionMetadataSchema>;
 
 /** Existing integrations only. This table describes compatibility, never routing. */
@@ -77,6 +79,7 @@ export const AI_CONNECTION_CAPABILITIES: Record<
     >;
   }
 > = {
+  google: { name: "Google", methods: { api_key: { adapters: ["gemini_local"], envKey: "GEMINI_API_KEY" } } },
   anthropic: {
     name: "Claude",
     methods: {
@@ -115,18 +118,12 @@ export function isAiConnectionCompatible(
   runnerProvider?: unknown,
   acpxAgent?: unknown,
 ): boolean {
-  if (adapterType === "paperclip_runner")
-    adapterType =
-      runnerProvider === "claude" ||
-      (runnerProvider === "acpx" && acpxAgent === "claude")
-        ? "claude_local"
-        : runnerProvider === "acpx" && acpxAgent === "grok"
-          ? "grok_local"
-        : runnerProvider === "codex"
-          ? "codex_local"
-          : runnerProvider === "opencode"
-            ? "opencode_local"
-            : "unsupported";
+  adapterType = aiRoutingHarness(adapterType, runnerProvider, acpxAgent);
+  if ("routing" in requirement && requirement.routing) return requirement.method === "api_key" && isAiRoutingCompatible(requirement.routing, adapterType);
+  // A fixed binding contains identity only. The service checks authoritative
+  // connection metadata before resolving credentials or running the harness.
+  if ("mode" in requirement && requirement.mode !== "responsible_user" && requirement.method === "api_key")
+    return ["claude_local", "codex_local", "opencode_local", "hermes_local", "gemini_local", "grok_local"].includes(adapterType);
   const methods = AI_CONNECTION_CAPABILITIES[requirement.provider].methods;
   const candidates = "mode" in requirement && requirement.mode === "responsible_user"
     ? Object.values(methods)
@@ -165,7 +162,7 @@ export interface AiManagedConnectionSummary {
   provider: AiProvider;
   method: AiAuthMethod;
   name: string;
-  baseUrl?: string;
+  routing?: AiProviderRouting;
   accountLabel?: string;
   ownership: "personal" | "shared";
   ownerUserId?: string;
@@ -186,8 +183,8 @@ export const createAiConnectionSchema = z
     ...requirement,
     name: z.string().trim().min(1).max(160),
     ownership: z.enum(["personal", "shared"]),
-    apiKey: z.string().trim().min(1).max(500).optional(),
-    baseUrl: z.string().trim().max(500).optional(),
+    routing: aiProviderRoutingSchema.optional(),
+    apiKey: z.string().trim().min(1).max(32768).optional(),
     loginSessionId: z.string().max(128).optional(),
     connectionId: z.string().uuid().optional(),
     agentIds: z.array(z.string().uuid()).max(1000).default([]),
@@ -197,6 +194,14 @@ export const createAiConnectionSchema = z
   .superRefine((v, ctx) => {
     if (!AI_CONNECTION_CAPABILITIES[v.provider].methods[v.method])
       ctx.addIssue({ code: "custom", message: "Unsupported sign-in method" });
+    if (v.routing && (v.method !== "api_key" || (v.routing.kind === "openrouter" && v.provider !== "openrouter") || (v.routing.kind === "bedrock" && v.provider !== "anthropic")))
+      ctx.addIssue({ code: "custom", message: "Routing requires the matching provider and API authentication." });
+    if (v.routing && ["gateway", "local"].includes(v.routing.kind) && v.provider !== (v.routing.protocol === "messages" ? "anthropic" : "openai"))
+      ctx.addIssue({ code: "custom", message: "The provider must match the endpoint’s API format." });
+    if (v.routing?.auth === "none") {
+      if (v.apiKey || v.loginSessionId) ctx.addIssue({ code: "custom", message: "Provide only the selected authentication method." });
+      return;
+    }
     if (
       v.method === "api_key"
         ? !v.apiKey || Boolean(v.loginSessionId)
@@ -213,7 +218,7 @@ export type CreateAiConnection = z.infer<typeof createAiConnectionSchema>;
 
 export const aiConnectionLoginIntentSchema = z
   .object({
-    provider: aiProviderSchema,
+    provider: z.enum(["anthropic", "openai", "xai"]),
     method: z.literal("subscription"),
     name: z.string().trim().min(1).max(160),
     ownership: z.enum(["personal", "shared"]),
@@ -232,10 +237,14 @@ export const localAiConnectionSchema = aiConnectionLoginIntentSchema.extend({
 export const localAiLoginStartSchema = aiConnectionLoginIntentSchema.extend({ restart: z.boolean().optional() });
 export interface LocalAiLoginStatus {
   status: "ready" | "sign_in_required" | "expired";
+  authorizationUrl?: string;
+  code?: string;
+  error?: string;
 }
 export interface LocalAiLoginAttempt {
   sessionId: string;
-  command: string;
+  /** Grok still uses terminal sign-in until it has an in-app login runner. */
+  command?: string;
   expiresAt: string;
 }
 
@@ -245,47 +254,4 @@ export function aiSubscriptionNeedsIsolatedLogin(config: Record<string, unknown>
   return metadata.success && metadata.data.method === "subscription" &&
     (metadata.data.provider === "openai" || metadata.data.provider === "xai") &&
     config?.aiIsolatedSubscription !== true;
-}
-
-/** Auto-detect a human-friendly provider name from a base URL (e.g. OmniRoute, DeepSeek, Groq, etc.) */
-export function detectAiProviderNameFromUrl(rawUrl: string | undefined | null): string {
-  if (!rawUrl || typeof rawUrl !== "string") return "";
-  try {
-    const trimmed = rawUrl.trim();
-    if (!trimmed) return "";
-    const parsed = trimmed.startsWith("http://") || trimmed.startsWith("https://")
-      ? new URL(trimmed)
-      : new URL(`https://${trimmed}`);
-    const host = parsed.hostname.toLowerCase();
-
-    // Check known provider host patterns
-    if (host.includes("omniroute")) return "OmniRoute";
-    if (host.includes("openrouter")) return "OpenRouter";
-    if (host.includes("together")) return "Together AI";
-    if (host.includes("fireworks")) return "Fireworks AI";
-    if (host.includes("groq")) return "Groq";
-    if (host.includes("deepseek")) return "DeepSeek";
-    if (host.includes("mistral")) return "Mistral";
-    if (host.includes("perplexity")) return "Perplexity";
-    if (host.includes("googleapis") || host.includes("gemini")) return "Google AI";
-    if (host.includes("cohere")) return "Cohere";
-    if (host.includes("anthropic")) return "Anthropic";
-    if (host.includes("ollama")) return "Ollama";
-    if (host.includes("vllm")) return "vLLM";
-    if (host.includes("litellm")) return "LiteLLM";
-    if (host.includes("openai")) return "OpenAI";
-
-    // Localhost / IP addresses
-    if (host === "localhost" || host.startsWith("127.") || host.startsWith("192.168.") || host.startsWith("10.")) {
-      return "Local Provider";
-    }
-
-    // Extract brand from subdomain/domain: api.acme.io → Acme
-    const parts = host.replace(/\.localhost$/, "").split(".");
-    const brand = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
-    if (!brand) return "";
-    return brand.charAt(0).toUpperCase() + brand.slice(1);
-  } catch {
-    return "";
-  }
 }

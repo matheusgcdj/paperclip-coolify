@@ -1,5 +1,8 @@
+import { aiRoutingHarness } from "@paperclipai/shared";
+import { agentIdentityService } from "../services/agent-identity.js";
 import { aiConnectionRouterService, poolMemberRuntimeConfig } from "../services/ai-connection-router.js";
 import { connectionIntentService } from "../services/connection-intents.js";
+import { connectionIntentDeliveryService } from "../services/connection-intent-delivery.js";
 import { completeConnectionIntentSchema } from "@paperclipai/shared";
 import { agentFileStore, agentFileTokenFromHash } from "../services/agent-file-store.js";
 import { pipeline } from "node:stream/promises";
@@ -3432,7 +3435,7 @@ export function agentRoutes(
     // requirement stays for subscriptions: a stored login is a file layout
     // only a provider CLI reads, so proving the runtime lane can consume it
     // takes a real hello turn.
-    if (resolvedMethod === "api_key") {
+    if (resolvedMethod === "api_key" && !context.config.managedAiRouting) {
       const envKey = AI_CONNECTION_CAPABILITIES[binding.provider].methods.api_key?.envKey;
       const contextConfig = (context as { config?: { env?: unknown } }).config;
       const key = envKey ? parseObject(contextConfig?.env)[envKey] : undefined;
@@ -3452,7 +3455,7 @@ export function agentRoutes(
       return result;
     }
     if (!result.checks.some(check => check.code.includes("hello_probe"))) {
-      const providerAdapter = { anthropic: "claude_local", openai: "codex_local", openrouter: "opencode_local", xai: "grok_local" }[binding.provider];
+      const providerAdapter = context.config.managedAiRouting ? aiRoutingHarness(adapterType, context.config.provider, context.config.acpxAgent) : { anthropic: "claude_local", openai: "codex_local", openrouter: "opencode_local", xai: "grok_local", google: "gemini_local" }[binding.provider];
       const probe = await requireServerAdapter(providerAdapter).testEnvironment({ ...context, adapterType: providerAdapter, config: { ...context.config, engine: "cli" } });
       result.checks.push(...probe.checks);
       result.status = probe.status === "fail" ? "fail" : result.status === "warn" || probe.status === "warn" ? "warn" : "pass";
@@ -4388,6 +4391,12 @@ export function agentRoutes(
     });
 
     res.json(rows);
+  });
+
+  router.get("/agents/:id/identity", async (req, res) => {
+    const agent = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Agent not found");
+    if (!agent || !(await assertAgentReadAllowed(req, res, agent))) return;
+    res.json(await agentIdentityService(db).getPublicIdentity(agent.companyId, agent.id));
   });
 
   router.get("/agents/:id", async (req, res) => {
@@ -5533,6 +5542,7 @@ export function agentRoutes(
     if (!userId || loaded.interaction.addresseeUserId !== userId) throw forbidden("Only the addressed user can adopt this connection");
     const connectionId = req.body.connectionId as string;
     if (loaded.interaction.status === "accepted" && loaded.interaction.result?.connectionId === connectionId) {
+      await connectionIntentDeliveryService(db, heartbeat).tryDeliver(interactionId);
       res.json(loaded.interaction);
       return;
     }
@@ -5543,9 +5553,13 @@ export function agentRoutes(
     // The binding, install, audit, and card resolution commit together below.
     const validatedConnection = await validateManagedAgentBinding(req, agent.companyId, agent.id, agent.adapterType, agent.adapterConfig, setup.aiConnection, agent.defaultEnvironmentId, true, true);
     if (validatedConnection?.connectionId !== connectionId) throw conflict("This is no longer the selected account. Reload the task and try again.");
-    res.json(await intents.complete(interactionId, connectionId, userId, {
+    const completed = await intents.complete(interactionId, connectionId, userId, {
       validatedAdoption: { agentUpdatedAt: agent.updatedAt, binding: setup.aiConnection },
-    }));
+    });
+    // Dispatch the committed continuation now. The persisted delivery remains
+    // available to the sweeper if this process exits or dispatch is deferred.
+    await connectionIntentDeliveryService(db, heartbeat).tryDeliver(interactionId);
+    res.json(completed);
   });
 
   router.patch("/agents/:id", validate(updateAgentSchema), async (req, res) => {

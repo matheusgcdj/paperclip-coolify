@@ -10,6 +10,7 @@ import {
   isRetiredComposioConnection,
   RETIRED_COMPOSIO_MESSAGE,
 } from "@paperclipai/shared";
+import { AssistantConnectionCard, useAssistantConnections } from "./AssistantConnection";
 import { ManagedAiConnectionRow } from "@/components/ai-connections/ManagedAiConnectionDetails";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -292,11 +293,11 @@ function connectorAction(
     };
   }
   if (chatHref) return { label: "Connect", href: chatHref };
-  // PAP-659 C4: the card's verb comes from the same four-state resolver the
-  // connect screen uses, so "Connect" never turns out to mean "paste a key".
+  // AI accounts share the Connect action across subscription and key methods.
+  // Tool connectors retain their capability-specific setup verbs.
   if (row.entry) {
     return {
-      label: connectionSetupVerbForApp(row.entry),
+      label: row.entry.methods?.some(method => method.purpose === "ai") ? "Connect" : connectionSetupVerbForApp(row.entry),
       href: connectHrefFor(row.entry),
     };
   }
@@ -330,6 +331,7 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
   const { selectedCompanyId } = useCompany();
+  const assistantConnections = useAssistantConnections();
   const { userId: viewingUserId, settled: identitySettled } = useAccountIdentity();
   const { enabled: chatConnectorsEnabled } = useChatConnectorsEnabled();
   const { enabled: memoryConnectorsEnabled } = useMemoryConnectorsEnabled();
@@ -600,7 +602,8 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
       const applicationSlug = appApplicationSourceSlug(application);
       const savedAppConnections =
         connectionsByApplicationId.get(application.id) ?? [];
-      const appConnections = savedAppConnections.filter(
+      if (applicationSlug === "gateway" && savedAppConnections.length === 0) continue;
+      let appConnections = savedAppConnections.filter(
         (connection) => !GOOGLE_CONNECTOR_SLUGS.has(appConnectionSourceSlug(connection) ?? ""),
       );
       // Hide source-only Google rows, but keep independently identified connectors.
@@ -609,6 +612,19 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
         savedAppConnections.length > 0 &&
         appConnections.length === 0
       ) continue;
+      // One legacy gateway application may contain several API formats. Group
+      // each saved AI account by its actual routing, not the old application slug.
+      const ungroupedCount = appConnections.length;
+      appConnections = appConnections.filter((connection) => {
+        if (connection.connectionPurpose !== "ai") return true;
+        const slug = appConnectionSourceSlug(connection);
+        const row = slug ? rowsBySlug.get(slug) : undefined;
+        if (!row) return true;
+        if (!row.applications.some((item) => item.id === application.id)) row.applications.push(application);
+        row.connections.push(connection);
+        return false;
+      });
+      if (ungroupedCount > 0 && appConnections.length === 0) continue;
       const configuredConnectionSlug = appConnections
         .map(
           (connection) =>
@@ -866,6 +882,9 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     }
     setAggregatorToConnect(app);
   }
+  const showAssistantConnection = (source === "paperclip" || source === "all" ||
+    (source === "installed" && (!assistantConnections.isSuccess || assistantConnections.rows.some(row => !row.revokedAt)))) &&
+    (!trimmed || "assistant connection (mcp) paperclip codex claude opencode".includes(trimmed));
   const showCustomConnector =
     (source === "paperclip" || source === "all") && (!trimmed || "connect your own tool custom mcp server".includes(trimmed));
 
@@ -887,7 +906,7 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     applicationsQuery.isError ||
     connectionsQuery.isError ||
     chatEndpointsQuery.isError;
-  const nothingMatches = visibleRows.length === 0 && !showCustomConnector;
+  const nothingMatches = visibleRows.length === 0 && !showCustomConnector && !showAssistantConnection;
 
   return (
     <div ref={catalogTop} className="max-w-5xl space-y-5 pb-12">
@@ -947,6 +966,7 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
         </div>
       ) : (
         <div className="space-y-3" role="list" aria-label="Connector list">
+          {showAssistantConnection && <AssistantConnectionCard onNavigate={navigate} />}
           {paginatedRows.map((row) => (
             <ConnectorCard
               renderAccountDetails={renderAccountDetails}
