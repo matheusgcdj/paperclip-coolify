@@ -1991,6 +1991,7 @@ export {
   updateIssueSchema,
   stalledReviewDecisionSchema,
   issueExecutionPolicySchema,
+  issueExecutionMonitorPolicySchema,
   issueExecutionStateSchema,
   resolveIssueRecoveryActionSchema,
   retryWorkspaceExportSchema,
@@ -2349,6 +2350,7 @@ export {
   type RunRoutine,
   type RotateRoutineTriggerSecret,
   createCostEventSchema,
+  createServiceCostEventSchema,
   createFinanceEventSchema,
   updateBudgetSchema,
   ASSET_NAMESPACE_MAX_LENGTH,
@@ -2853,3 +2855,5 @@ export { isAppAggregator, aggregatorManagementUrl, aggregatorAppsSyncSchema, agg
 
 export * from "./connection-instructions.js";
 export * from "./customer-success.js";
+export * from "./decision-models.js";
+export { updatePrimaryAgentSchema, type UpdatePrimaryAgent, type PrimaryAgentPreference } from "./primary-agent.js";
