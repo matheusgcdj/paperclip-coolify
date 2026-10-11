@@ -39,7 +39,7 @@ import { StatusIcon } from "./StatusIcon";
 import { WorkspaceFileLink } from "./WorkspaceFileLink";
 import { ExternalObjectStatusIcon } from "./ExternalObjectStatusIcon";
 import {
-  externalObjectCategoryLabel,
+  externalObjectDisplayStatusLabel,
   externalObjectLivenessLabel,
   externalObjectProviderLabel,
 } from "../lib/external-objects";
@@ -242,9 +242,10 @@ function MarkdownExternalLink({
 }) {
   const provider = externalObjectProviderLabel(reference.providerKey);
   const displayKey = reference.displayKey?.trim() || provider;
-  const statusLabel = reference.statusLabel ?? externalObjectCategoryLabel(reference.statusCategory);
+  const statusLabel = externalObjectDisplayStatusLabel(reference);
   const livenessLabel = externalObjectLivenessLabel(reference.liveness);
   const livenessSuffix = reference.liveness === "fresh" || reference.liveness === "unknown"
+    || livenessLabel.toLowerCase() === statusLabel.toLowerCase()
     ? ""
     : ` (${livenessLabel})`;
   const titleParts = [
