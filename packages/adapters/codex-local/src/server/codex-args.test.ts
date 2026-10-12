@@ -278,4 +278,34 @@ describe("buildCodexExecArgs", () => {
     expect(args).toEqual(["exec", "--json", "--dangerously-bypass-approvals-and-sandbox", "-"]);
   });
 
+  it("injects openai_base_url when OPENAI_BASE_URL is in env", () => {
+    const { args } = buildCodexExecArgs({
+      env: { OPENAI_BASE_URL: "https://api.omniroute.io/v1/" },
+      dangerouslyBypassApprovalsAndSandbox: true,
+    });
+    expect(args).toEqual([
+      "exec",
+      "--json",
+      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      "openai_base_url=\"https://api.omniroute.io/v1\"",
+      "-",
+    ]);
+  });
+
+  it("does not duplicate openai_base_url if already in extraArgs", () => {
+    const { args } = buildCodexExecArgs({
+      env: { OPENAI_BASE_URL: "https://api.omniroute.io/v1" },
+      extraArgs: ["-c", "openai_base_url=\"https://custom.host/v1\""],
+      dangerouslyBypassApprovalsAndSandbox: true,
+    });
+    expect(args).toEqual([
+      "exec",
+      "--json",
+      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      "openai_base_url=\"https://custom.host/v1\"",
+      "-",
+    ]);
+  });
 });

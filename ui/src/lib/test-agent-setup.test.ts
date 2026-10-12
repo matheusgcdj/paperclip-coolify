@@ -98,3 +98,18 @@ it("preserves runtime warnings after a successful provider request", async () =>
     .mockResolvedValueOnce(ready);
   expect((await testAgentSetup(input)).status).toBe("warn");
 });
+
+it("does not launch an ambient CLI hello probe when the API key was verified live for adoption", async () => {
+  testEnvironment.mockResolvedValueOnce({
+    ...ready,
+    checks: [{ code: "ai_connection_api_key_reverified", level: "info", message: "Verified" }],
+  });
+  const result = await testAgentSetup({
+    ...input,
+    adapterType: "codex_local",
+    providerAdapter: "codex_local",
+  });
+  expect(testEnvironment).toHaveBeenCalledTimes(1);
+  expect(result.status).toBe("pass");
+});
+

@@ -85,6 +85,16 @@ export function buildCodexExecArgs(
   if (fastModeApplied) {
     args.push("-c", 'service_tier="fast"', "-c", "features.fast_mode=true");
   }
+  const rawEnv = (record.env && typeof record.env === "object" ? (record.env as Record<string, unknown>) : {});
+  const rawBaseUrl =
+    (typeof rawEnv.OPENAI_BASE_URL === "string" ? rawEnv.OPENAI_BASE_URL : (rawEnv.OPENAI_BASE_URL as { value?: unknown } | undefined)?.value as string | undefined) ||
+    (typeof record.baseUrl === "string" ? record.baseUrl : undefined) ||
+    (typeof record.openai_base_url === "string" ? record.openai_base_url : undefined) ||
+    (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0 ? process.env.OPENAI_BASE_URL.trim() : undefined);
+  const cleanBaseUrl = rawBaseUrl?.trim().replace(/\/+$/, "");
+  if (cleanBaseUrl && !extraArgs.some((arg) => /^(?:(?:--config=|-c=?)\s*)?openai_base_url\s*=/.test(arg))) {
+    args.push("-c", `openai_base_url=${JSON.stringify(cleanBaseUrl)}`);
+  }
   if (extraArgs.length > 0) args.push(...extraArgs);
   if (!bypass && options.networkAccess === false) {
     args.push("-c", "sandbox_workspace_write.network_access=false");

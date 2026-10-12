@@ -221,11 +221,16 @@ async function prepareCodexHelloProbe(input: {
       : path.join(os.tmpdir(), `paperclip-codex-probe-${input.runId}`);
     // The local finally path retries cleanup independently of the model result.
     if (!input.targetIsRemote) probeHomeLocalDir = probeHome;
+    const rawBaseUrl = input.env.OPENAI_BASE_URL || process.env.OPENAI_BASE_URL;
+    const cleanBaseUrl = rawBaseUrl?.trim().replace(/\/+$/, "");
+    const configTomlScript = cleanBaseUrl
+      ? `printf "cli_auth_credentials_store = \\"file\\"\\nopenai_base_url = \\"%s\\"\\n" "${cleanBaseUrl}" > "$CODEX_HOME/config.toml"; `
+      : "";
     return {
       command: "sh",
       args: [
         "-c",
-        `set -e; umask 077; mkdir -p "$CODEX_HOME"; printf "%s" "$_PAPERCLIP_CODEX_AUTH_JSON" > "$CODEX_HOME/auth.json"; unset _PAPERCLIP_CODEX_AUTH_JSON; cleanup() { result=$?; trap - EXIT; rm -f "$CODEX_HOME/auth.json" || true; rm -rf "$CODEX_HOME" || printf '%s\\n' '${PROBE_CLEANUP_WARNING}' >&2; exit "$result"; }; trap cleanup EXIT; trap 'exit 130' INT; trap 'exit 143' TERM; "$0" "$@"`,
+        `set -e; umask 077; mkdir -p "$CODEX_HOME"; printf "%s" "$_PAPERCLIP_CODEX_AUTH_JSON" > "$CODEX_HOME/auth.json"; ${configTomlScript}unset _PAPERCLIP_CODEX_AUTH_JSON; cleanup() { result=$?; trap - EXIT; rm -f "$CODEX_HOME/auth.json" "$CODEX_HOME/config.toml" || true; rm -rf "$CODEX_HOME" || printf '%s\\n' '${PROBE_CLEANUP_WARNING}' >&2; exit "$result"; }; trap cleanup EXIT; trap 'exit 130' INT; trap 'exit 143' TERM; "$0" "$@"`,
         input.command,
         ...input.args,
       ],

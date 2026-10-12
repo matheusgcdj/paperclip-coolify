@@ -317,12 +317,29 @@ export async function prepareManagedAiRuntime(
         selection.attribution.method
       ]!;
     const authFile = path.join(providerHome, "auth.json");
-    if (harness === "codex_local")
+    if (harness === "codex_local" || input.binding.provider === "openai") {
+      let configTomlContent = 'cli_auth_credentials_store = "file"\n';
+      if (!routing && configuredOpenAiBaseUrl) {
+        const cleanUrl = configuredOpenAiBaseUrl.trim();
+        configTomlContent += `openai_base_url = "${cleanUrl}"\n\nmodel_provider = "custom_openai"\n\n[model_providers.custom_openai]\nname = "Custom OpenAI-Compatible"\nbase_url = "${cleanUrl}"\nenv_key = "OPENAI_API_KEY"\nwire_api = "responses"\nrequires_openai_auth = false\n`;
+        env.PAPERCLIP_CODEX_PROVIDERS = JSON.stringify({
+          providers: {
+            custom_openai: {
+              name: "Custom OpenAI-Compatible",
+              base_url: cleanUrl,
+              env_key: "OPENAI_API_KEY",
+              wire_api: "responses",
+            },
+          },
+          model_provider: "custom_openai",
+        });
+      }
       await writeFile(
         path.join(providerHome, "config.toml"),
-        'cli_auth_credentials_store = "file"\n',
+        configTomlContent,
         { mode: 0o600 },
       );
+    }
     if (!routing && subscriptionFile) await writeFile(authFile, value, { mode: 0o600 });
     else if (!routing) env[capability.envKey] = value;
     if (

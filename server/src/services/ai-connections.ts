@@ -81,7 +81,7 @@ export function aiConnectionService(db: Db) {
     );
   }
   async function rows(companyId: string) {
-    return db
+    const raw = await db
       .select({ connection: toolConnections, grant: connectionGrants })
       .from(toolConnections)
       .innerJoin(
@@ -97,6 +97,21 @@ export function aiConnectionService(db: Db) {
           eq(toolConnections.connectionPurpose, "ai"),
         ),
       );
+    return raw.map(({ connection, grant }) => {
+      const rowConfig = (connection.config ?? {}) as Record<string, unknown>;
+      const isAiOpenAi =
+        connection.connectionPurpose === "ai" &&
+        (rowConfig.sourceTemplateKey === "openai" ||
+          (rowConfig.ai as { provider?: string } | undefined)?.provider === "openai");
+      const fallbackBaseUrl =
+        isAiOpenAi && !rowConfig.baseUrl && process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0
+          ? process.env.OPENAI_BASE_URL.trim()
+          : undefined;
+      return {
+        connection: fallbackBaseUrl ? { ...connection, config: { ...rowConfig, baseUrl: fallbackBaseUrl } } : connection,
+        grant,
+      };
+    });
   }
   async function list(
     companyId: string,
