@@ -307,10 +307,34 @@ export async function prepareManagedAiRuntime(
     );
     const providerHome = path.join(home, "provider");
     await mkdir(providerHome, { mode: 0o700 });
+    const rawEnv = (input.config.env && typeof input.config.env === "object"
+      ? (input.config.env as Record<string, unknown>)
+      : {});
+    const configuredOpenAiBaseUrl =
+      typeof rawEnv.OPENAI_BASE_URL === "string"
+        ? rawEnv.OPENAI_BASE_URL
+        : typeof (rawEnv.OPENAI_BASE_URL as { value?: unknown } | undefined)?.value === "string"
+          ? (rawEnv.OPENAI_BASE_URL as { value: string }).value
+          : typeof selection.connection?.config?.baseUrl === "string"
+            ? selection.connection.config.baseUrl
+            : (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0 ? process.env.OPENAI_BASE_URL.trim() : undefined);
+    const configuredAnthropicBaseUrl =
+      typeof rawEnv.ANTHROPIC_BASE_URL === "string"
+        ? rawEnv.ANTHROPIC_BASE_URL
+        : typeof (rawEnv.ANTHROPIC_BASE_URL as { value?: unknown } | undefined)?.value === "string"
+          ? (rawEnv.ANTHROPIC_BASE_URL as { value: string }).value
+          : (process.env.ANTHROPIC_BASE_URL && process.env.ANTHROPIC_BASE_URL.trim().length > 0 ? process.env.ANTHROPIC_BASE_URL.trim() : undefined);
+
     const env: Record<string, unknown> = {
       ...stripAiAuthBindings(input.config.env),
       ...Object.fromEntries(AI_AUTH_ENV_KEYS.map((key) => [key, ""])),
       ...managedAiHomeEnvironment(home),
+    };
+    if (configuredOpenAiBaseUrl) {
+      env.OPENAI_BASE_URL = configuredOpenAiBaseUrl;
+    }
+    if (configuredAnthropicBaseUrl) {
+      env.ANTHROPIC_BASE_URL = configuredAnthropicBaseUrl;
     };
     const capability =
       AI_CONNECTION_CAPABILITIES[input.binding.provider].methods[
