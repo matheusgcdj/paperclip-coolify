@@ -510,7 +510,11 @@ export function agentEnvironmentTestService(db: Db, pluginWorkerManager?: Plugin
         (typeof rawEnv.ANTHROPIC_BASE_URL === "string" ? rawEnv.ANTHROPIC_BASE_URL : (rawEnv.ANTHROPIC_BASE_URL as { value?: unknown } | undefined)?.value as string | undefined);
       try {
         if (typeof key !== "string" || !key) throw unprocessable("The selected account's API key was not available to verify.");
-        await validateAiApiKey(binding.provider, key, ...(customBaseUrl ? [undefined, customBaseUrl] : []));
+        if (customBaseUrl) {
+          await validateAiApiKey(binding.provider, key, undefined, customBaseUrl);
+        } else {
+          await validateAiApiKey(binding.provider, key);
+        }
         result.checks.push({ code: "ai_connection_api_key_reverified", level: "info", message: "The provider verified this API key for adoption." });
       } catch (error) {
         result.status = "fail";
