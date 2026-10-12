@@ -122,4 +122,12 @@ for (const file of ["/app/server/dist/routes/ai-connections.js", "/app/server/di
 }
 ' 2>/dev/null || true
 
+# Unset empty/whitespace base URLs so libraries like @ai-sdk do not fail with baseURL non-empty string errors
+for var in OPENAI_BASE_URL ANTHROPIC_BASE_URL AI_BASE_URL XAI_BASE_URL GOOGLE_GEMINI_BASE_URL; do
+  eval "val=\${var:-}"
+  if [ -z "$(echo "$val" | tr -d "[:space:]")" ]; then
+    unset "$var"
+  fi
+done
+
 exec gosu node "$@"
