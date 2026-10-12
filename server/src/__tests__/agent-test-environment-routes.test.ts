@@ -124,7 +124,7 @@ vi.mock("../services/ai-api-key-test.js", () => ({ validateAiApiKey: mockValidat
 const mockMarkAuthenticationFailed = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock("../services/ai-connections.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../services/ai-connections.js")>()),
-  aiConnectionService: () => ({ markAuthenticationFailed: mockMarkAuthenticationFailed }),
+  aiConnectionService: () => ({ markAuthenticationFailed: mockMarkAuthenticationFailed, markAuthenticationRestored: vi.fn(async () => undefined) }),
 }));
 
 function mockManagedRuntime(method: "api_key" | "subscription") {

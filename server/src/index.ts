@@ -54,6 +54,8 @@ import {
   toolConnections,
   connectionGrants,
   agents,
+  aiProviderDefaults,
+  aiConnectionDefaults,
 } from "@paperclipai/db";
 import detectPort from "detect-port";
 import { detectAiProviderNameFromUrl } from "@paperclipai/shared";
@@ -268,6 +270,37 @@ async function autoRecoverAiConnections(db: Db, log: typeof logger) {
           .where(and(eq(connectionGrants.connectionId, conn.id), eq(connectionGrants.status, "needs_reauthorization")));
 
         log.info({ connectionId: conn.id, name: newName, baseUrl: foundBaseUrl, previousHealth: conn.healthStatus }, "Auto-recovered AI connection status, provider name, and baseUrl");
+      }
+
+      // Ensure aiProviderDefaults and aiConnectionDefaults exist for company members
+      const activeGrants = await db
+        .select({ id: connectionGrants.id, kind: connectionGrants.kind, subjectUserId: connectionGrants.subjectUserId })
+        .from(connectionGrants)
+        .where(eq(connectionGrants.connectionId, conn.id));
+
+      const members = await db
+        .select({ userId: companyMemberships.userId })
+        .from(companyMemberships)
+        .where(eq(companyMemberships.companyId, conn.companyId));
+
+      for (const grant of activeGrants) {
+        for (const member of members) {
+          await db
+            .insert(aiProviderDefaults)
+            .values({ companyId: conn.companyId, userId: member.userId, provider: "openai", grantId: grant.id })
+            .onConflictDoNothing();
+          await db
+            .insert(aiConnectionDefaults)
+            .values({ companyId: conn.companyId, userId: member.userId, provider: "openai", method: "api_key", grantId: grant.id })
+            .onConflictDoNothing();
+
+          if (grant.kind === "user" && !grant.subjectUserId) {
+            await db
+              .update(connectionGrants)
+              .set({ subjectUserId: member.userId, updatedAt: new Date() })
+              .where(eq(connectionGrants.id, grant.id));
+          }
+        }
       }
     }
   } catch (err) {

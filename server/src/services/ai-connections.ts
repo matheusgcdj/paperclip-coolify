@@ -195,11 +195,13 @@ export function aiConnectionService(db: Db) {
           ...(needsReconnect ? { unavailableReason: "Reconnect with a separate sign-in to protect your existing terminal login." } : {}),
           ownership:
             grant.kind === "user" ? ("personal" as const) : ("shared" as const),
-          ownerUserId: grant.subjectUserId ?? undefined,
+          ownerUserId: grant.subjectUserId ?? (grant.kind === "user" ? userId : undefined),
           ownerName:
             owners.find((owner) => owner.id === grant.subjectUserId)?.name ??
-            (grant.subjectUserId === userId ? "You" : "Account owner"),
-          isDefault: defaults.some((d) => d.grantId === grant.id),
+            (grant.subjectUserId === userId || (grant.kind === "user" && !grant.subjectUserId) ? "You" : "Account owner"),
+          isDefault: defaults.some((d) => d.grantId === grant.id) ||
+            (!defaults.some((d) => d.provider === metadata.data.provider) && connection.enabled && connection.status === "active" && grant.status === "active" &&
+              (grant.subjectUserId === userId || (!grant.subjectUserId && grant.kind === "user"))),
           status:
             grant.status === "revoked"
               ? ("revoked" as const)
@@ -333,10 +335,39 @@ export function aiConnectionService(db: Db) {
               .limit(1)
           )[0]
         : null;
-    const grantId =
+    let grantId =
       binding.mode === "responsible_user"
         ? defaultRow?.grantId
         : binding.grantId;
+
+    if (!grantId && binding.mode === "responsible_user") {
+      const allRows = await rows(companyId);
+      const candidates = allRows.filter(
+        (r) =>
+          (r.connection.config?.ai as { provider?: string } | undefined)?.provider === binding.provider &&
+          r.connection.enabled &&
+          r.connection.status === "active" &&
+          (r.grant.status === "active" || input.allowProbeReauthorization),
+      );
+      const personalGrant = candidates.find(
+        (r) => r.grant.kind === "user" && (r.grant.subjectUserId === userId || !r.grant.subjectUserId),
+      );
+      const fallback = personalGrant ?? candidates.find((r) => r.grant.kind === "organization") ?? candidates[0];
+      if (fallback) {
+        grantId = fallback.grant.id;
+        if (userId) {
+          await db
+            .insert(aiProviderDefaults)
+            .values({ companyId, userId, provider: binding.provider, grantId })
+            .onConflictDoUpdate({
+              target: [aiProviderDefaults.companyId, aiProviderDefaults.userId, aiProviderDefaults.provider],
+              set: { grantId, updatedAt: new Date() },
+            })
+            .catch(() => {});
+        }
+      }
+    }
+
     if (!grantId)
       throw aiConnectionConfigurationFailure("ai_connection_default_missing", "Connect an account and choose your personal default");
     const row = (await rows(companyId)).find(
@@ -1080,6 +1111,16 @@ export function aiConnectionService(db: Db) {
         .catch(error => logger.warn({ err: error, grantId: input.attribution.grantId }, "Saved failed-run credential recovery cleanup pending"));
     });
   }
+  async function markAuthenticationRestored(input: {
+    attribution: { grantId: string; connectionId: string };
+  }) {
+    await db.transaction(async (tx) => {
+      await tx.update(connectionGrants).set({ status: "active", updatedAt: new Date() })
+        .where(eq(connectionGrants.id, input.attribution.grantId));
+      await tx.update(toolConnections).set({ healthStatus: "ok", healthMessage: null, updatedAt: new Date() })
+        .where(eq(toolConnections.id, input.attribution.connectionId));
+    }).catch(() => {});
+  }
   /** Refresh only the selected vaulted identity, serializing rotation and reconnect. */
   async function refreshQuotaCredential(row: Parameters<typeof credential>[0], failedValue: string, signal: AbortSignal) {
     return withAccountHomeSecretMutationLock(undefined, row.connection.companyId, async () => {
@@ -1189,5 +1230,5 @@ export function aiConnectionService(db: Db) {
       return [{ ...row, summary }];
     });
   }
-  return { list, selectDecision, selectFastResponse, quotaAccounts, subscriptionAccounts: (companyId: string, userId: string) => quotaAccounts(companyId, userId, true), refreshQuotaCredential, select, credential, runtimeCredential, probeUsage, save, setDefault, membership, markAuthenticationFailed };
+  return { list, selectDecision, selectFastResponse, quotaAccounts, subscriptionAccounts: (companyId: string, userId: string) => quotaAccounts(companyId, userId, true), refreshQuotaCredential, select, credential, runtimeCredential, probeUsage, save, setDefault, membership, markAuthenticationFailed, markAuthenticationRestored };
 }

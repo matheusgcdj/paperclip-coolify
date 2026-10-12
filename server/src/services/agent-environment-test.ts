@@ -479,12 +479,9 @@ export function agentEnvironmentTestService(db: Db, pluginWorkerManager?: Plugin
         attribution: { ...managed.attribution, identity: managed.identity },
       });
     } else if (result.status !== "fail" && !result.checks.some(c => c.level === "error")) {
-      await db.transaction(async tx => {
-        await tx.update(connectionGrants).set({ status: "active", updatedAt: new Date() })
-          .where(eq(connectionGrants.id, managed.attribution.grantId));
-        await tx.update(toolConnections).set({ healthStatus: "ok", healthMessage: null, updatedAt: new Date() })
-          .where(eq(toolConnections.id, managed.attribution.connectionId));
-      });
+      await aiConnectionService(db).markAuthenticationRestored({
+        attribution: { grantId: managed.attribution.grantId, connectionId: managed.attribution.connectionId },
+      }).catch(() => {});
     }
     return result;
   }
