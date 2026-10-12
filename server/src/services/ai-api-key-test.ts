@@ -6,10 +6,19 @@ export async function validateAiApiKey(
   provider: AiProvider,
   key: string,
   request: typeof fetch = fetch,
+  customBaseUrl?: string,
 ) {
+  const openaiEndpoint = customBaseUrl
+    ? `${customBaseUrl.replace(/\/+$/, "")}/models`
+    : process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0
+      ? `${process.env.OPENAI_BASE_URL.trim().replace(/\/+$/, "")}/models`
+      : "https://api.openai.com/v1/models";
+  const anthropicEndpoint = process.env.ANTHROPIC_BASE_URL && process.env.ANTHROPIC_BASE_URL.trim().length > 0
+    ? `${process.env.ANTHROPIC_BASE_URL.trim().replace(/\/+$/, "")}/models?limit=1`
+    : "https://api.anthropic.com/v1/models?limit=1";
   const endpoints = {
-    anthropic: "https://api.anthropic.com/v1/models?limit=1",
-    openai: "https://api.openai.com/v1/models",
+    anthropic: anthropicEndpoint,
+    openai: openaiEndpoint,
     openrouter: "https://openrouter.ai/api/v1/key",
     xai: "https://api.x.ai/v1/models",
     google: "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1",
@@ -25,14 +34,21 @@ export async function validateAiApiKey(
           : { Authorization: `Bearer ${key}` },
     });
   } catch {
+    if (customBaseUrl || (process.env.OPENAI_BASE_URL && provider === "openai")) {
+      return;
+    }
     throw unprocessable("Could not verify the account. Try again.", { code: "ai_connection_verification_failed" });
   }
   await response.body?.cancel();
-  if (!response.ok)
+  if (!response.ok) {
+    if (customBaseUrl || (process.env.OPENAI_BASE_URL && provider === "openai" && response.status !== 401 && response.status !== 403)) {
+      return;
+    }
     throw unprocessable(
       response.status === 401 || response.status === 403
         ? "The provider rejected this API key."
         : "The provider could not verify this account. Try again.",
       { code: response.status === 401 || response.status === 403 ? "ai_connection_api_key_rejected" : "ai_connection_verification_failed" },
     );
+  }
 }

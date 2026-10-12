@@ -305,7 +305,7 @@ export function aiConnectionRoutes(db: Db, options: Parameters<typeof supportsLo
       const attemptStartedAt = new Date();
       // Custom destinations are exercised in the selected execution environment,
       // never fetched by the control plane (including localhost/private URLs).
-      if (!input.routing || input.routing.kind === "openrouter") await validateAiApiKey(input.provider, input.apiKey!);
+      if (!input.routing || input.routing.kind === "openrouter") await validateAiApiKey(input.provider, input.apiKey!, undefined, (input as { baseUrl?: string }).baseUrl);
       const result = await service.save(
         companyId,
         userId,

@@ -102,7 +102,7 @@ fi
 # Patch compiled routes to respect OPENAI_BASE_URL and ANTHROPIC_BASE_URL if set
 node -e '
 const fs = require("fs");
-for (const file of ["/app/server/dist/routes/ai-connections.js", "/app/server/dist/adapters/codex-models.js"]) {
+for (const file of ["/app/server/dist/routes/ai-connections.js", "/app/server/dist/services/ai-api-key-test.js", "/app/server/dist/services/agent-environment-test.js", "/app/server/dist/adapters/codex-models.js"]) {
   if (fs.existsSync(file)) {
     let c = fs.readFileSync(file, "utf8");
     let changed = false;
