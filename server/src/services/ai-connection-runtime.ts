@@ -237,11 +237,21 @@ export async function prepareManagedAiRuntime(
     "PAPERCLIP_OPENCODE_PROVIDERS",
     "PAPERCLIP_AI_PROVIDER_URL", "PAPERCLIP_CODEX_PROVIDERS", "OPENCODE_CONFIG_CONTENT", "OPENCODE_CONFIG", "OPENCODE_CONFIG_DIR", "GOOGLE_GEMINI_BASE_URL", "ANTHROPIC_BEDROCK_BASE_URL",
   ]) {
-    if (configuredEnv[key])
-      throw unprocessable(
-        "The configured provider routing is incompatible with this AI connection",
-        { code: "ai_connection_incompatible" },
-      );
+    if (configuredEnv[key]) {
+      const isCompatibleRouting =
+        (key === "OPENAI_BASE_URL" && input.binding.provider === "openai") ||
+        (key === "ANTHROPIC_BASE_URL" && input.binding.provider === "anthropic") ||
+        (key === "XAI_BASE_URL" && input.binding.provider === "xai") ||
+        (key.startsWith("CLAUDE_CODE_USE_") && input.binding.provider === "anthropic") ||
+        (key === "PAPERCLIP_OPENCODE_PROVIDERS" && input.binding.provider === "openrouter");
+
+      if (!isCompatibleRouting) {
+        throw unprocessable(
+          "The configured provider routing is incompatible with this AI connection",
+          { code: "ai_connection_incompatible" },
+        );
+      }
+    }
   }
   const harness = aiRoutingHarness(input.adapterType, input.config.provider, input.config.acpxAgent);
   await assertManagedAiProjectAuth(input.config, harness === "claude_local" ? "anthropic" : harness === "codex_local" ? "openai" : input.binding.provider);
