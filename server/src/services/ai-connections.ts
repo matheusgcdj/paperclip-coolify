@@ -22,6 +22,7 @@ import {
   toolConnectionInstalls,
 } from "@paperclipai/db";
 import {
+  detectAiProviderNameFromUrl,
   AI_CONNECTION_CAPABILITIES,
   decisionProviderForConnection,
   aiConnectionCatalogSlug,
@@ -97,6 +98,20 @@ export function aiConnectionService(db: Db) {
           eq(toolConnections.connectionPurpose, "ai"),
         ),
       );
+    const companyAgents = await db
+      .select({ adapterConfig: agents.adapterConfig })
+      .from(agents)
+      .where(eq(agents.companyId, companyId));
+    let detectedAgentOpenAiBaseUrl: string | undefined;
+    for (const a of companyAgents) {
+      const env = (a.adapterConfig as { env?: Record<string, unknown> } | undefined)?.env;
+      const val = typeof env?.OPENAI_BASE_URL === "string" ? env.OPENAI_BASE_URL : (env?.OPENAI_BASE_URL as { value?: string })?.value;
+      if (val && typeof val === "string" && val.trim().length > 0) {
+        detectedAgentOpenAiBaseUrl = val.trim();
+        break;
+      }
+    }
+
     return raw.map(({ connection, grant }) => {
       const rowConfig = (connection.config ?? {}) as Record<string, unknown>;
       const isAiOpenAi =
@@ -104,8 +119,8 @@ export function aiConnectionService(db: Db) {
         (rowConfig.sourceTemplateKey === "openai" ||
           (rowConfig.ai as { provider?: string } | undefined)?.provider === "openai");
       const fallbackBaseUrl =
-        isAiOpenAi && !rowConfig.baseUrl && process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0
-          ? process.env.OPENAI_BASE_URL.trim()
+        isAiOpenAi && !rowConfig.baseUrl
+          ? (detectedAgentOpenAiBaseUrl || (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim().length > 0 ? process.env.OPENAI_BASE_URL.trim() : undefined))
           : undefined;
       return {
         connection: fallbackBaseUrl ? { ...connection, config: { ...rowConfig, baseUrl: fallbackBaseUrl } } : connection,
@@ -154,14 +169,28 @@ export function aiConnectionService(db: Db) {
       const needsReconnect = aiSubscriptionNeedsIsolatedLogin(connection.config);
       if (!canUseCredential(grant, userId, members.filter((m) => m.grantId === grant.id)))
         return [];
+      const rowConfig = (connection.config ?? {}) as Record<string, unknown>;
+      const connectionBaseUrl =
+        (typeof rowConfig.baseUrl === "string" ? rowConfig.baseUrl.trim() : undefined) ||
+        (typeof (rowConfig.ai as Record<string, unknown> | undefined)?.baseUrl === "string"
+          ? ((rowConfig.ai as Record<string, unknown>).baseUrl as string).trim()
+          : undefined) ||
+        metadata.data.routing?.baseUrl;
+
+      const detectedBrand = connectionBaseUrl ? detectAiProviderNameFromUrl(connectionBaseUrl) : undefined;
+      const effectiveName = (detectedBrand && (/^my openai api( account)?$/i.test(connection.name) || /^openai api( account)?$/i.test(connection.name) || /^my openai-compatible api$/i.test(connection.name) || /^openai-compatible api$/i.test(connection.name)))
+        ? (connection.name.toLowerCase().startsWith("my ") ? `My ${detectedBrand} API` : `${detectedBrand} API`)
+        : connection.name;
+
       return [
         {
           id: connection.id,
           grantId: grant.id,
           companyId,
           ...metadata.data,
+          baseUrl: connectionBaseUrl,
           usageProbeSupported: supportsAiConnectionUsage(metadata.data.provider, metadata.data.method),
-          name: connection.name,
+          name: effectiveName,
           accountLabel: grant.providerTenant?.name,
           ...(needsReconnect ? { unavailableReason: "Reconnect with a separate sign-in to protect your existing terminal login." } : {}),
           ownership:
@@ -270,6 +299,7 @@ export function aiConnectionService(db: Db) {
     allowUninstalledPersonal?: boolean;
     allowUninstalledShared?: boolean;
     allowLegacyValidation?: boolean;
+    allowProbeReauthorization?: boolean;
     binding: AiConnectionBinding;
   }) {
     const { companyId, userId, agentId, binding } = input;
@@ -329,13 +359,12 @@ export function aiConnectionService(db: Db) {
     if (aiSubscriptionNeedsIsolatedLogin(connection.config))
       throw aiConnectionConfigurationFailure("ai_connection_unavailable", "Reconnect this subscription with a separate sign-in to protect your existing terminal login.", { connectionId: connection.id });
     if (
-      grant.status !== "active" ||
       !connection.enabled ||
       connection.status !== "active" ||
-      (connection.healthStatus !== "ok" &&
+      ((grant.status !== "active" || connection.healthStatus !== "ok") &&
         !(
-          input.allowLegacyValidation &&
-          connection.config.aiLegacyAdoption === true
+          input.allowProbeReauthorization ||
+          (input.allowLegacyValidation && connection.config.aiLegacyAdoption === true)
         ))
     )
       throw aiConnectionConfigurationFailure("ai_connection_unavailable", "Reconnect or validate the selected AI account", { connectionId: connection.id });
@@ -750,7 +779,18 @@ export function aiConnectionService(db: Db) {
             status: "active",
             healthStatus: "ok",
             healthMessage: null,
-            config: { ...reconnect.connection.config, aiIsolatedSubscription: input.method === "subscription" && input.provider !== "anthropic" },
+            config: {
+              ...reconnect.connection.config,
+              baseUrl: (input as { baseUrl?: string }).baseUrl ?? (reconnect.connection.config as { baseUrl?: string })?.baseUrl,
+              ai: {
+                ...((reconnect.connection.config?.ai as Record<string, unknown>) ?? {}),
+                provider: input.provider,
+                method: input.method,
+                baseUrl: (input as { baseUrl?: string }).baseUrl ?? (reconnect.connection.config as { baseUrl?: string })?.baseUrl,
+                ...(routing ? { routing } : {}),
+              },
+              aiIsolatedSubscription: input.method === "subscription" && input.provider !== "anthropic"
+            },
             updatedAt: new Date(),
           })
           .where(eq(toolConnections.id, id));
@@ -773,7 +813,13 @@ export function aiConnectionService(db: Db) {
             healthStatus: "ok",
             config: {
               sourceTemplateKey: source,
-              ai: { provider: input.provider, method: input.method, ...(routing ? { routing } : {}) },
+              baseUrl: (input as { baseUrl?: string }).baseUrl,
+              ai: {
+                provider: input.provider,
+                method: input.method,
+                baseUrl: (input as { baseUrl?: string }).baseUrl,
+                ...(routing ? { routing } : {})
+              },
               aiIsolatedSubscription: input.method === "subscription" && input.provider !== "anthropic",
             },
             createdByUserId: userId,

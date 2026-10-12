@@ -50,8 +50,13 @@ import {
   companies,
   companyMemberships,
   instanceUserRoles,
+  type Db,
+  toolConnections,
+  connectionGrants,
+  agents,
 } from "@paperclipai/db";
 import detectPort from "detect-port";
+import { detectAiProviderNameFromUrl } from "@paperclipai/shared";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { logger } from "./middleware/logger.js";
@@ -207,6 +212,66 @@ export async function startServer(): Promise<StartedServer> {
       });
     }
     throw error;
+  }
+}
+
+async function autoRecoverAiConnections(db: Db, log: typeof logger) {
+  try {
+    const allAiConnections = await db
+      .select({ id: toolConnections.id, companyId: toolConnections.companyId, name: toolConnections.name, config: toolConnections.config, healthStatus: toolConnections.healthStatus })
+      .from(toolConnections)
+      .where(eq(toolConnections.connectionPurpose, "ai"));
+
+    for (const conn of allAiConnections) {
+      const cfg = (conn.config ?? {}) as Record<string, unknown>;
+      const isAiOpenAi = cfg.sourceTemplateKey === "openai" || (cfg.ai as { provider?: string } | undefined)?.provider === "openai";
+      if (!isAiOpenAi) continue;
+
+      const companyAgents = await db
+        .select({ adapterConfig: agents.adapterConfig })
+        .from(agents)
+        .where(eq(agents.companyId, conn.companyId));
+      let foundBaseUrl: string | undefined = (cfg.baseUrl as string) || ((cfg.ai as { baseUrl?: string })?.baseUrl);
+      if (!foundBaseUrl) {
+        for (const a of companyAgents) {
+          const env = (a.adapterConfig as { env?: Record<string, unknown> } | undefined)?.env;
+          const url = typeof env?.OPENAI_BASE_URL === "string" ? env.OPENAI_BASE_URL : (env?.OPENAI_BASE_URL as { value?: string })?.value;
+          if (url && url.trim()) { foundBaseUrl = url.trim(); break; }
+        }
+      }
+      foundBaseUrl = foundBaseUrl || (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim() ? process.env.OPENAI_BASE_URL.trim() : undefined);
+
+      const brand = foundBaseUrl ? detectAiProviderNameFromUrl(foundBaseUrl) : undefined;
+      const isGenericName = /^my openai api( account)?$/i.test(conn.name) || /^openai api( account)?$/i.test(conn.name) || /^my openai-compatible api$/i.test(conn.name) || /^openai-compatible api$/i.test(conn.name);
+      const newName = (brand && isGenericName)
+        ? (conn.name.toLowerCase().startsWith("my ") ? `My ${brand} API` : `${brand} API`)
+        : conn.name;
+
+      const hasChanges = (conn.healthStatus !== "ok") || (newName !== conn.name) || Boolean(foundBaseUrl && (!cfg.baseUrl || !((cfg.ai as Record<string, unknown> | undefined)?.baseUrl)));
+
+      if (hasChanges) {
+        const newConfig = {
+          ...cfg,
+          ...(foundBaseUrl ? { baseUrl: foundBaseUrl } : {}),
+          ai: {
+            ...((cfg.ai as Record<string, unknown>) ?? {}),
+            ...(foundBaseUrl ? { baseUrl: foundBaseUrl } : {}),
+          },
+        };
+
+        await db.update(toolConnections)
+          .set({ healthStatus: "ok", healthMessage: null, name: newName, config: newConfig, updatedAt: new Date() })
+          .where(eq(toolConnections.id, conn.id));
+
+        await db.update(connectionGrants)
+          .set({ status: "active", updatedAt: new Date() })
+          .where(and(eq(connectionGrants.connectionId, conn.id), eq(connectionGrants.status, "needs_reauthorization")));
+
+        log.info({ connectionId: conn.id, name: newName, baseUrl: foundBaseUrl, previousHealth: conn.healthStatus }, "Auto-recovered AI connection status, provider name, and baseUrl");
+      }
+    }
+  } catch (err) {
+    log.warn({ err }, "Auto-recover AI connections check skipped or failed");
   }
 }
 
@@ -715,6 +780,7 @@ async function startServerWithDatabaseTeardown(
   if (toolOAuthBackfill.sanitizedConnections > 0 || toolOAuthBackfill.migratedConnections > 0) {
     logger.info(toolOAuthBackfill, "Backfilled legacy tool OAuth credentials into company secrets");
   }
+  await autoRecoverAiConnections(db as any, logger);
   const confirmationSweep = await issueThreadInteractionService(db as any)
     .sweepSupersededPendingRequestConfirmations();
   if (confirmationSweep.expired > 0) {

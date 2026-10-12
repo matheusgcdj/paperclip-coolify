@@ -164,6 +164,7 @@ export interface AiManagedConnectionSummary {
   provider: AiProvider;
   method: AiAuthMethod;
   name: string;
+  baseUrl?: string;
   routing?: AiProviderRouting;
   accountLabel?: string;
   ownership: "personal" | "shared";
@@ -186,6 +187,7 @@ export const createAiConnectionSchema = z
     name: z.string().trim().min(1).max(160),
     ownership: z.enum(["personal", "shared"]),
     routing: aiProviderRoutingSchema.optional(),
+    baseUrl: z.string().trim().max(2048).optional(),
     apiKey: z.string().trim().min(1).max(32768).optional(),
     loginSessionId: z.string().max(128).optional(),
     connectionId: z.string().uuid().optional(),

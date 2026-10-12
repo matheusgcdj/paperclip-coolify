@@ -303,13 +303,37 @@ export function aiConnectionRoutes(db: Db, options: Parameters<typeof supportsLo
           "Use the existing provider sign-in flow to connect a subscription",
         );
       const attemptStartedAt = new Date();
+      let effectiveBaseUrl = input.baseUrl;
+      if (!effectiveBaseUrl && input.connectionId) {
+        const [existing] = await db.select({ config: toolConnections.config })
+          .from(toolConnections)
+          .where(and(eq(toolConnections.companyId, companyId), eq(toolConnections.id, input.connectionId)));
+        const existingConfig = existing?.config as Record<string, unknown> | undefined;
+        effectiveBaseUrl = (existingConfig?.baseUrl as string | undefined) ?? ((existingConfig?.ai as Record<string, unknown> | undefined)?.baseUrl as string | undefined);
+      }
+      if (!effectiveBaseUrl && input.provider === "openai") {
+        const companyAgents = await db.select({ adapterConfig: agents.adapterConfig })
+          .from(agents)
+          .where(eq(agents.companyId, companyId));
+        for (const a of companyAgents) {
+          const env = (a.adapterConfig as { env?: Record<string, unknown> } | undefined)?.env;
+          const url = typeof env?.OPENAI_BASE_URL === "string" ? env.OPENAI_BASE_URL : (env?.OPENAI_BASE_URL as { value?: string })?.value;
+          if (url && url.trim()) {
+            effectiveBaseUrl = url.trim();
+            break;
+          }
+        }
+      }
+      if (!effectiveBaseUrl && input.provider === "openai" && process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.trim()) {
+        effectiveBaseUrl = process.env.OPENAI_BASE_URL.trim();
+      }
       // Custom destinations are exercised in the selected execution environment,
       // never fetched by the control plane (including localhost/private URLs).
-      if (!input.routing || input.routing.kind === "openrouter") await validateAiApiKey(input.provider, input.apiKey!, undefined, (input as { baseUrl?: string }).baseUrl);
+      if (!input.routing || input.routing.kind === "openrouter") await validateAiApiKey(input.provider, input.apiKey!, undefined, effectiveBaseUrl);
       const result = await service.save(
         companyId,
         userId,
-        input,
+        { ...input, baseUrl: effectiveBaseUrl },
         input.apiKey ?? "",
         undefined,
         attemptStartedAt,

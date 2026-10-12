@@ -1,4 +1,5 @@
-import type { Db } from "@paperclipai/db";
+import { type Db, connectionGrants, toolConnections } from "@paperclipai/db";
+import { eq } from "drizzle-orm";
 import type { AdapterExecutionTarget } from "@paperclipai/adapter-utils/execution-target";
 import type { AdapterEnvironmentCheck } from "@paperclipai/adapter-utils";
 import { parseObject } from "@paperclipai/adapter-utils/server-utils";
@@ -476,6 +477,13 @@ export function agentEnvironmentTestService(db: Db, pluginWorkerManager?: Plugin
       await aiConnectionService(db).markAuthenticationFailed({
         companyId: context.companyId, agentId, runStartedAt: startedAt,
         attribution: { ...managed.attribution, identity: managed.identity },
+      });
+    } else if (result.status !== "fail" && !result.checks.some(c => c.level === "error")) {
+      await db.transaction(async tx => {
+        await tx.update(connectionGrants).set({ status: "active", updatedAt: new Date() })
+          .where(eq(connectionGrants.id, managed.attribution.grantId));
+        await tx.update(toolConnections).set({ healthStatus: "ok", healthMessage: null, updatedAt: new Date() })
+          .where(eq(toolConnections.id, managed.attribution.connectionId));
       });
     }
     return result;

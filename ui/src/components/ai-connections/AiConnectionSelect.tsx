@@ -3,6 +3,7 @@ import { Plus, UserRound } from "lucide-react";
 import {
   aiConnectionCatalogSlug,
   isAiConnectionCompatible,
+  detectAiProviderNameFromUrl,
   type AiConnectionBinding,
 } from "@paperclipai/shared";
 import {
@@ -19,10 +20,15 @@ import type { AiConnectionPickerProps } from "./AiConnectionPicker";
 import type { AiConnectionSummary } from "./model";
 
 function ConnectionLabel({ connection, label }: { connection: AiConnectionSummary; label?: string }) {
+  const isCompatible = connection.provider === "openai" && Boolean(connection.baseUrl);
+  const detectedBrand = isCompatible ? detectAiProviderNameFromUrl(connection.baseUrl) : "";
+  const displayName = isCompatible && detectedBrand && (/^my openai api( account)?$/i.test(connection.name) || /^openai api( account)?$/i.test(connection.name) || /^my openai-compatible api$/i.test(connection.name) || /^openai-compatible api$/i.test(connection.name))
+    ? (connection.name.toLowerCase().startsWith("my ") ? `My ${detectedBrand} API` : `${detectedBrand} API`)
+    : connection.name;
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <AppLogo name={connection.name} brandKey={aiConnectionCatalogSlug(connection.provider, connection.routing)} size={20} compact />
-      <span className="truncate">{label ?? connection.name}</span>
+      <AppLogo name={displayName} brandKey={aiConnectionCatalogSlug(connection.provider, connection.routing)} size={20} compact />
+      <span className="truncate">{label ?? displayName}</span>
     </span>
   );
 }

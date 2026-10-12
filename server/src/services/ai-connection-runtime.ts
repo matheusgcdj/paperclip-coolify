@@ -220,6 +220,7 @@ export async function prepareManagedAiRuntime(
     allowUninstalledPersonal?: boolean;
     allowUninstalledShared?: boolean;
     allowLegacyValidation?: boolean;
+    allowProbeReauthorization?: boolean;
     config: Record<string, unknown>;
   },
 ) {
@@ -262,6 +263,7 @@ export async function prepareManagedAiRuntime(
     model: input.config.model,
     runnerProvider: input.config.provider,
     acpxAgent: input.config.acpxAgent,
+    allowProbeReauthorization: input.allowProbeReauthorization,
   });
   const subscriptionFile =
     selection.attribution.method === "subscription" &&
@@ -534,7 +536,7 @@ export async function withManagedAiProbe<T>(
   probe: (runtime: Awaited<ReturnType<typeof prepareManagedAiRuntime>>) => Promise<T>,
 ): Promise<T> {
   const run = async () => {
-    const runtime = await prepareManagedAiRuntime(db, input);
+    const runtime = await prepareManagedAiRuntime(db, { ...input, allowProbeReauthorization: true });
     try { return await probe(runtime); }
     finally { await runtime.cleanup(); }
   };
