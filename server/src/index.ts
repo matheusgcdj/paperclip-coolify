@@ -279,9 +279,12 @@ async function autoRecoverAiConnections(db: Db, log: typeof logger) {
         .where(eq(connectionGrants.connectionId, conn.id));
 
       const members = await db
-        .select({ userId: companyMemberships.userId })
+        .select({ userId: companyMemberships.principalId })
         .from(companyMemberships)
-        .where(eq(companyMemberships.companyId, conn.companyId));
+        .where(and(
+          eq(companyMemberships.companyId, conn.companyId),
+          eq(companyMemberships.principalType, "user"),
+        ));
 
       for (const grant of activeGrants) {
         for (const member of members) {
